@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# 🎫 Ticket Booking Management System – Sri Lanka Planetarium
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web application built to manage **ticket bookings for the Sri Lanka Planetarium**.  
+This system allows users to explore available shows, book tickets online, and manage their bookings through a smooth and responsive interface.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## React Compiler
+- 🎟️ **Online Ticket Booking** – View show schedules and reserve tickets instantly.  
+- 🧑‍💼 **Admin Dashboard** – Manage shows, bookings, and user activity with ease.  
+- 💳 **Payment Simulation** – Mock flow for handling online payments.  
+- 🌌 **Responsive Design** – Optimized for desktop, tablet, and mobile using TailwindCSS.  
+- 🔐 **Authentication** – Login and registration system for users and admins.  
+- ⚙️ **Scalable Architecture** – Built with React + TypeScript for reliability and maintainability.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🧰 Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Category | Technology |
+|-----------|-------------|
+| **Frontend Framework** | React (with Vite) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS |
+| **Version Control** | Git & GitHub |
+| **CI/CD** | GitHub Actions |
+| **Deployment** | (Optional) GitHub Pages / Vercel / Netlify |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 📂 Folder Structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+```plaintext
+📦 planetarium-webapp/
+├── 📁 .github/
+│   └── 📁 workflows/           # GitHub Actions workflows (CI/CD)
+│
+├── 📁 .idea/                   # WebStorm project configuration files
+│
+├── 📁 node_modules/            # Installed npm dependencies
+│
+├── 📁 public/                  # Static public assets (index.html, icons, etc.)
+│
+├── 📁 src/
+│   ├── 📁 assets/              # Images, icons, and static resources
+│   ├── 📁 Components/          # Reusable UI components (Navbar, Footer, etc.)
+│   ├── 📁 Pages/               # Page components (Home, Login, Register, Booking, etc.)
+│   ├── App.css                 # Global styles
+│   ├── App.tsx                 # Root React component
+│   ├── index.css               # Base CSS (includes Tailwind directives)
+│   └── main.tsx                # Application entry point
+│
+├── .gitignore                  # Files and folders ignored by Git
+├── eslint.config.js            # ESLint configuration for code quality
+├── index.html                  # Main HTML template
+├── package.json                # Project dependencies and scripts
+├── pnpm-lock.yaml              # Lock file for PNPM package manager
+├── postcss.config.js           # Tailwind & PostCSS configuration
+├── README.md                   # Project documentation
+├── tailwind.config.ts          # Tailwind CSS configuration
+├── tsconfig.json               # TypeScript configuration
+├── tsconfig.app.json           # TypeScript app-specific config
+├── tsconfig.node.json          # TypeScript node-specific config
+└── vite.config.ts              # Vite configuration file
