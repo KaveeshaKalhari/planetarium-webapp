@@ -1,9 +1,11 @@
-# 🎫 Ticket Booking Management System – Sri Lanka Planetarium
+<div align="center">
 
-A modern web application built to manage **ticket bookings for the Sri Lanka Planetarium**.  
-This system allows users to explore available shows, book tickets online, and manage their bookings through a smooth and responsive interface.
+# 🌌 Sri Lanka Planetarium Ticket Booking Management System 🎫
+
+A modern web application built with **React**, **TypeScript**, and **Tailwind CSS** for managing online ticket booking at the **Sri Lanka Planetarium**.
 
 ---
+</div>
 
 ## 🚀 Features
 
