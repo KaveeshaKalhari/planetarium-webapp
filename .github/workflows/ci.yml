@@ -1,0 +1,57 @@
+name: React App CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js and cache for pnpm
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      # Step 3: Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # Step 4: Install dependencies (using pnpm)
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Step 5: Run ESLint (optional but recommended)
+      - name: Run ESLint
+        run: pnpm run lint --if-present
+
+      # Step 6: Run tests
+      - name: Run tests
+        run: pnpm test --if-present
+
+      # Step 7: Build React app
+      - name: Build React app
+        run: pnpm run build
+
+      # Step 8: Upload production build as artifact
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: build/
