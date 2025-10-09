@@ -7,6 +7,7 @@ import AboutUsPage from "./Pages/AboutUsPage.tsx";
 import ContactUs from "./Pages/ContactUs.tsx";
 import LoginPage from "./Pages/LoginPage.tsx";
 import RegisterPage from "./Pages/RegisterPage.tsx";
+import ForgotPasswordPage from "./Pages/ForgotPasswordPage.tsx";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sign-up" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Routes>
   )
 }
