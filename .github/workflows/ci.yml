@@ -20,18 +20,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js and cache for pnpm
+      # Step 2: Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # Step 3: Set up Node.js and cache for pnpm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-
-      # Step 3: Install pnpm
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       # Step 4: Install dependencies (using pnpm)
       - name: Install dependencies
@@ -39,11 +39,11 @@ jobs:
 
       # Step 5: Run ESLint (optional but recommended)
       - name: Run ESLint
-        run: pnpm run lint --if-present
+        run: pnpm run lint
 
       # Step 6: Run tests
       - name: Run tests
-        run: pnpm test --if-present
+        run: pnpm test
 
       # Step 7: Build React app
       - name: Build React app

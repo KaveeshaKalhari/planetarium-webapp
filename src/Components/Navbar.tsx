@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import PlanetariumLogo from "../Assets/PlanetariumLogo.png";
+import PlanetariumLogo from "../assets/PlanetariumLogo.png";
 
 const Navbar: React.FC = () => {
     const location = useLocation();
