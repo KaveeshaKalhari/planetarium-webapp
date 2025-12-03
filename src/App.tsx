@@ -8,6 +8,10 @@ import ContactUs from "./Pages/ContactUs.tsx";
 import LoginPage from "./Pages/LoginPage.tsx";
 import RegisterPage from "./Pages/RegisterPage.tsx";
 import ForgotPasswordPage from "./Pages/ForgotPasswordPage.tsx";
+import BookingPage from "./Pages/BookingPage.tsx";
+import ChooseSeatPage from "./Pages/ChooseSeatPage..tsx";
+import ReviewOrderPage from "./Pages/ReviewOrderPage.tsx";
+import PaymentPage from "./Pages/PaymentPage.tsx";
 
 function App() {
   return (
@@ -20,6 +24,10 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sign-up" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/choose-seats" element={<ChooseSeatPage />} />
+          <Route path="/review-order" element={<ReviewOrderPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
       </Routes>
   )
 }
