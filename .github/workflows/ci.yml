@@ -39,11 +39,11 @@ jobs:
 
       # Step 5: Run ESLint (optional but recommended)
       - name: Run ESLint
-        run: pnpm run lint --if-present
+        run: pnpm run lint
 
       # Step 6: Run tests
       - name: Run tests
-        run: pnpm test --if-present
+        run: pnpm test
 
       # Step 7: Build React app
       - name: Build React app
