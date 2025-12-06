@@ -14,7 +14,7 @@ const Navbar: React.FC = () => {
     ];
 
     return (
-        <nav className="flex items-center justify-between px-8 w-full absolute top-0 left-0 z-10 bg-transparent">
+        <nav className="flex items-center justify-between w-full absolute top-0 left-0 z-10 bg-transparent">
             {/* Logo */}
             <div>
                 <Link to="/">
@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
 
             {/* Links */}
             <div className="flex-1 flex justify-center">
-                <ul className="hidden md:flex space-x-8 text-sm font-semibold">
+                <ul className="hidden md:flex space-x-8 font-semibold">
                     {navLinks.map((link) => (
                         <li key={link.name} className="relative">
                             <Link
@@ -50,16 +50,16 @@ const Navbar: React.FC = () => {
             </div>
 
             {/* Auth Buttons */}
-            <div className="space-x-2">
+            <div className="space-x-2 pr-6">
                 <Link
                     to="/login"
-                    className="px-4 py-1 bg-[#219EBC] rounded text-white text-sm font-semibold hover:bg-[#126782] transition"
+                    className="px-6 py-2 bg-[#219EBC] rounded text-white text-sm font-semibold hover:bg-[#126782] transition"
                 >
                     Login
                 </Link>
                 <Link
                     to="/sign-up"
-                    className="px-4 py-1 bg-[#219EBC] rounded text-white text-sm font-semibold hover:bg-[#126782] transition"
+                    className="px-5 py-2 bg-[#219EBC] rounded text-white text-sm font-semibold hover:bg-[#126782] transition"
                 >
                     Sign Up
                 </Link>
