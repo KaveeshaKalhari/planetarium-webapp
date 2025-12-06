@@ -1,110 +1,216 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, ArrowRight } from 'lucide-react';
 
-const steps = [
-    { label: "Select Show", path: "/booking" },
-    { label: "Choose Seats", path: "/choose-seats" },
-    { label: "Review Order", path: "/review-order" },
-    { label: "Payment", path: "/payment" },
-];
+const PlanetariumBooking = () => {
+    const [selectedDate, setSelectedDate] = useState(new Date(2025, 8, 13)); // September 13, 2025
+    const [selectedTime, setSelectedTime] = useState('10:00 AM');
+    const [currentMonth, setCurrentMonth] = useState(new Date(2025, 8)); // September 2025
 
-const show = {
-    title: "Galaxies Nebulae",
-    description:
-        "Explore the vibrant clouds of gas and dust where stars are born.",
-    image:
-        "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80",
-};
+    const steps = [
+        { number: 1, label: 'Select Show', active: true },
+        { number: 2, label: 'Choose Seats', active: false },
+        { number: 3, label: 'Review Order', active: false },
+        { number: 4, label: 'Payment', active: false },
+    ];
 
-const times = [
-    "10.00 AM",
-    "12.00 PM",
-    "2.00 AM",
-    "4.00 AM",
-    "6.00 AM",
-];
+    const showtimes = [
+        '10:00 AM',
+        '12:00 PM',
+        '2:00 AM',
+        '4:00 AM',
+        '6:00 AM',
+        'More',
+    ];
 
-const TicketBooking: React.FC = () => {
-    const [selectedStep, setSelectedStep] = useState(0);
-    const [selectedTime, setSelectedTime] = useState(times[0]);
-    const [selectedDate, setSelectedDate] = useState("2028-07-28");
+    const getDaysInMonth = (date: Date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        return { firstDay, daysInMonth };
+    };
+
+    const { firstDay, daysInMonth } = getDaysInMonth(currentMonth);
+    const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    };
+
+    const handleDateSelect = (day: number) => {
+        const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+        setSelectedDate(newDate);
+    };
+
+    const formatDateForInput = (date: Date) => {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${month}/${day}/${year}`;
+    };
 
     return (
-        <div className="min-h-screen bg-[#08132a] flex flex-col items-center pt-10">
-            <div className="bg-[#16244a] rounded-lg shadow-lg w-full max-w-3xl px-8 py-8 border border-white">
-                <h1 className="text-3xl font-bold text-white text-center mb-2">Ticket Booking</h1>
-                <p className="text-center text-cyan-300 mb-8">
-                    Follow the steps below to complete your booking for an unforgettable journey through the planetarium
-                </p>
-                {/* Stepper */}
-                <div className="flex justify-center items-center mb-10 gap-8">
-                    {steps.map((step, idx) => (
-                        <div key={step.label} className="flex flex-col items-center">
-                            <button
-                                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold mb-2 ${
-                                    selectedStep === idx
-                                        ? "bg-[#16244a] border-cyan-400 text-cyan-300"
-                                        : "bg-[#16244a] border-gray-400 text-white"
-                                }`}
-                                onClick={() => setSelectedStep(idx)}
-                            >
-                                {idx + 1}
-                            </button>
-                            <span
-                                className={`text-xs ${
-                                    selectedStep === idx ? "text-cyan-300" : "text-white"
-                                }`}
-                            >
-                {step.label}
-              </span>
-                        </div>
-                    ))}
+        <div className="min-h-screen bg-[#0A1128] text-white p-4 md:p-8">
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="max-w-6xl mx-auto mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
+                        Ticket Booking
+                    </h1>
+                    <p className="text-slate-300 text-center text-lg">
+                        Follow the steps below to complete your booking for an unforgettable journey through the planetarium
+                    </p>
                 </div>
-                {/* Booking Card */}
-                <div className="flex gap-6 items-start bg-[#dbeafe] rounded-lg p-6">
-                    <img
-                        src={show.image}
-                        alt={show.title}
-                        className="w-40 h-32 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                        <div className="bg-white rounded shadow p-3 mb-4">
-                            <h2 className="font-semibold text-lg text-[#16244a]">{show.title}</h2>
-                            <p className="text-sm text-gray-700">{show.description}</p>
-                        </div>
-                        <div>
-                            <label className="block text-[#16244a] font-semibold mb-2">
-                                Select Date &amp; Showtime
-                            </label>
-                            <div className="flex items-center gap-2 mb-3">
-                                <input
-                                    type="date"
-                                    value={selectedDate}
-                                    onChange={e => setSelectedDate(e.target.value)}
-                                    className="px-2 py-1 rounded bg-white text-[#16244a] border border-gray-300"
-                                />
-                                <span>
-                  <svg className="w-5 h-5 text-[#16244a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <path d="M16 2v4M8 2v4M3 10h18" />
-                  </svg>
+                <div className="max-w-6xl mx-auto mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
+                        Ticket Booking
+                    </h1>
+                    <p className="text-slate-300 text-center text-lg">
+                        Follow the steps below to complete your booking for an unforgettable journey through the planetarium
+                    </p>
+                </div>
+
+                {/* Progress Steps */}
+                <div className="max-w-5xl mx-auto mb-12">
+                    <div className="flex items-center justify-between">
+                        {steps.map((step, index) => (
+                            <React.Fragment key={step.number}>
+                                <div className="flex flex-col items-center">
+                                    <div
+                                        className={`w-16 h-16 md:w-20 md:h-20 rounded-full border-4 flex items-center justify-center text-xl md:text-2xl font-bold transition-all ${
+                                            step.active
+                                                ? 'bg-slate-400 border-slate-400 text-slate-900'
+                                                : 'bg-transparent border-slate-200 text-slate-200'
+                                        }`}
+                                    >
+                                        {step.number}
+                                    </div>
+                                    <span className="mt-3 text-sm md:text-base font-medium text-slate-200">
+                  {step.label}
                 </span>
+                                </div>
+                                {index < steps.length - 1 && (
+                                    <div className="flex-1 h-1 bg-slate-200 mx-2 md:mx-4 mb-8" />
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="bg-slate-300 rounded-2xl p-6 md:p-8">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {/* Left Side - Show Card */}
+                        <div>
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl overflow-hidden">
+                                <img
+                                    src="https://images.unsplash.com/photo-1543722530-d2c3201371e7?w=800&h=600&fit=crop"
+                                    alt="Galaxies Nebulae"
+                                    className="w-full h-64 object-cover"
+                                />
+                                <div className="p-6">
+                                    <h3 className="text-2xl font-bold text-white mb-2">Galaxies Nebulae</h3>
+                                    <p className="text-slate-400 text-sm">
+                                        Explore the vibrant clouds of gas and dust where stars are born.
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex gap-2 flex-wrap">
-                                {times.map(time => (
+                        </div>
+
+                        {/* Right Side - Date & Time Selection */}
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-6">Select Date & Showtime</h2>
+
+                            {/* Date Input */}
+                            <div className="mb-6 relative">
+                                <input
+                                    type="text"
+                                    value={formatDateForInput(selectedDate)}
+                                    readOnly
+                                    className="w-full px-4 py-3 rounded-lg border-2 border-slate-400 focus:border-blue-500 focus:outline-none text-slate-800 cursor-pointer"
+                                />
+                                <Calendar className="absolute right-4 top-3.5 text-slate-600" size={20} />
+                            </div>
+
+                            {/* Calendar */}
+                            <div className="bg-white rounded-lg p-4 mb-6 shadow-md">
+                                <div className="flex items-center justify-between mb-4">
+                                    <button
+                                        onClick={handlePrevMonth}
+                                        className="p-1 hover:bg-slate-100 rounded"
+                                    >
+                                        <ChevronLeft size={20} className="text-slate-600" />
+                                    </button>
+                                    <span className="font-semibold text-slate-800">{monthName}</span>
+                                    <button
+                                        onClick={handleNextMonth}
+                                        className="p-1 hover:bg-slate-100 rounded"
+                                    >
+                                        <ChevronRight size={20} className="text-slate-600" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-7 gap-1 text-center">
+                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+                                        <div key={day} className="text-xs font-semibold text-slate-500 py-2">
+                                            {day}
+                                        </div>
+                                    ))}
+                                    {Array.from({ length: firstDay }).map((_, i) => (
+                                        <div key={`empty-${i}`} />
+                                    ))}
+                                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                                        const day = i + 1;
+                                        const isSelected = selectedDate.getDate() === day &&
+                                            selectedDate.getMonth() === currentMonth.getMonth() &&
+                                            selectedDate.getFullYear() === currentMonth.getFullYear();
+                                        return (
+                                            <button
+                                                key={day}
+                                                onClick={() => handleDateSelect(day)}
+                                                className={`py-2 text-sm rounded-full transition-colors ${
+                                                    isSelected
+                                                        ? 'bg-blue-500 text-white font-bold'
+                                                        : 'text-slate-700 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {day}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Showtime Buttons */}
+                            <div className="grid grid-cols-3 gap-3 mb-6">
+                                {showtimes.map((time) => (
                                     <button
                                         key={time}
-                                        type="button"
                                         onClick={() => setSelectedTime(time)}
-                                        className={`px-4 py-2 rounded bg-white text-[#16244a] border ${
+                                        className={`py-3 px-4 rounded-lg font-medium transition-colors ${
                                             selectedTime === time
-                                                ? "border-cyan-400 font-bold"
-                                                : "border-gray-300"
+                                                ? 'bg-blue-400 text-slate-900'
+                                                : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                                         }`}
                                     >
                                         {time}
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Continue Button */}
+                            <button
+                              type="button"
+                              onClick={() => { window.location.href = '/choose-seats'; }}
+                              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                              Continue
+                              <ArrowRight size={20} />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -113,4 +219,4 @@ const TicketBooking: React.FC = () => {
     );
 };
 
-export default TicketBooking;
+export default PlanetariumBooking;
