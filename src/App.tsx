@@ -9,7 +9,7 @@ import LoginPage from "./Pages/LoginPage.tsx";
 import RegisterPage from "./Pages/RegisterPage.tsx";
 import ForgotPasswordPage from "./Pages/ForgotPasswordPage.tsx";
 import BookingPage from "./Pages/BookingPage.tsx";
-import ChooseSeatPage from "./Pages/ChooseSeatPage..tsx";
+import ChooseSeatPage from "./Pages/ChooseSeatPage.tsx";
 import ReviewOrderPage from "./Pages/ReviewOrderPage.tsx";
 import PaymentPage from "./Pages/PaymentPage.tsx";
 
