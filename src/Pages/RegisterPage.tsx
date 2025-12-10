@@ -151,7 +151,7 @@ const SignUpPage: React.FC = () => {
                 setSuccess('Google sign up successful! Redirecting...');
 
                 setTimeout(() => {
-                    navigate('/');
+                    navigate('/login');
                 }, 1000);
             } else {
                 setError(response.message || 'Google authentication failed');
