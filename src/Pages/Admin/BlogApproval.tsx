@@ -2,10 +2,26 @@ import { useState } from 'react';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
 import { AdminSidebar } from '../../components/AdminSidebar';
 
-export function BlogApproval() {
-    const [selectedBlog, setSelectedBlog] = useState<any>(null);
+interface Blog {
+    id: number;
+    title: string;
+    author: string;
+    email?: string;
+    category: string;
+    submittedDate?: string;
+    approvedDate?: string;
+    wordCount?: number;
+    excerpt?: string;
+    content?: string;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    image?: string;
+}
 
-    const pendingBlogs = [
+export function BlogApproval() {
+    const [selectedBlog, setSelectedBlog] =
+        useState<Blog | null>(null);
+
+    const pendingBlogs: Blog[] = [
         {
             id: 1,
             title: 'Understanding Gravitational Waves',
@@ -47,7 +63,7 @@ export function BlogApproval() {
         }
     ];
 
-    const approvedBlogs = [
+    const approvedBlogs: Blog[] = [
         {
             id: 4,
             title: 'Understanding Black Holes',

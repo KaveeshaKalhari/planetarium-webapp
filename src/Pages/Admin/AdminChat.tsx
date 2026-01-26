@@ -2,11 +2,29 @@ import { useState } from 'react';
 import { Send, AlertCircle, Trash2 } from 'lucide-react';
 import { AdminSidebar } from '../../components/AdminSidebar';
 
+interface Conversation {
+    id: number;
+    user: string;
+    lastMessage: string;
+    timestamp: string;
+    unread: number;
+    flagged: boolean;
+}
+
+interface ChatMessage {
+    id: number;
+    user: string;
+    text: string;
+    timestamp: string;
+    isAdmin: boolean;
+}
+
 export function AdminChat() {
-    const [selectedConversation, setSelectedConversation] = useState<any>(null);
+    const [selectedConversation, setSelectedConversation] =
+        useState<Conversation | null>(null);
     const [message, setMessage] = useState('');
 
-    const conversations = [
+    const conversations: Conversation[] = [
         {
             id: 1,
             user: 'Sarah Johnson',
@@ -33,7 +51,7 @@ export function AdminChat() {
         }
     ];
 
-    const messages = selectedConversation ? [
+    const messages: ChatMessage[] = selectedConversation ? [
         {
             id: 1,
             user: 'Michael Chen',

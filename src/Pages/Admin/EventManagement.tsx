@@ -1,16 +1,30 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Calendar, Clock, MapPin, Image, X } from 'lucide-react';
 import { AdminSidebar } from '../../components/AdminSidebar';
-import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import {Input} from "../../components/ui/input.tsx";
+
+interface Event {
+    id: number;
+    title: string;
+    description: string;
+    date: string;
+    time: string;
+    endTime: string;
+    location: string;
+    category: 'Astronomy' | 'Space Science' | 'Activity' | 'Special Day' | 'Special Show';
+    status: 'Upcoming' | 'Archived';
+    bannerImage: string | null;
+}
 
 export function EventManagement() {
     const [showModal, setShowModal] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<any>(null);
+    const [editingEvent, setEditingEvent] =
+        useState<Event | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
-    const events = [
+    const events: Event[] = [
         {
             id: 1,
             title: 'Solar Eclipse Viewing',
@@ -78,7 +92,7 @@ export function EventManagement() {
         setShowModal(true);
     };
 
-    const handleEditEvent = (event: any) => {
+    const handleEditEvent = (event: Event) => {
         setEditingEvent(event);
         setShowModal(true);
     };
