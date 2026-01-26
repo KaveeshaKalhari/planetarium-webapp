@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Calendar, Clock, MapPin, Image, X } from 'lucide-re
 import { AdminSidebar } from '../../components/AdminSidebar';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import {Input} from "../../components/ui/input.tsx";
+import { Input } from '../../components/ui/input';
 
 interface Event {
     id: number;
