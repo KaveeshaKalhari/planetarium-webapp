@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, Calendar, Clock, MapPin, Image, X } from 'lucide-react';
-import { AdminSidebar } from '../../components/AdminSidebar';
-import { Label } from '../../components/ui/label';
-import { Textarea } from '../../components/ui/textarea';
-import { Input } from '../../components/ui/input';
+import { AdminSidebar } from "../../components/AdminSidebar.tsx";
+import { Label } from '../../components/ui/label.tsx';
+import { Textarea } from '../../components/ui/textarea.tsx';
+import { Input } from '../../components/ui/input.tsx';
 
 interface Event {
     id: number;

@@ -1,8 +1,6 @@
 import { DollarSign, TrendingUp } from 'lucide-react';
-import {
-    LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
-import { AdminSidebar } from '../../components/AdminSidebar';
+import {LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
+import { AdminSidebar } from "../../components/AdminSidebar.tsx";
 
 export function RevenueAnalysis() {
     const dailyRevenue = [

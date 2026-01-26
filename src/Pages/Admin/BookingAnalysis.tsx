@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AdminSidebar } from '../../components/AdminSidebar';
+import { AdminSidebar } from "../../components/AdminSidebar.tsx";
 
 export function BookingAnalysis() {
     const [dateRange, setDateRange] = useState('7days');

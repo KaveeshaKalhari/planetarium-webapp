@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Send, AlertCircle, Trash2 } from 'lucide-react';
-import { AdminSidebar } from '../../components/AdminSidebar';
+import {AdminSidebar} from "../../components/AdminSidebar.tsx";
 
 interface Conversation {
     id: number;

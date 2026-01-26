@@ -1,6 +1,6 @@
 import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AdminSidebar } from '../../components/AdminSidebar';
+import {AdminSidebar} from "../../components/AdminSidebar.tsx";
 
 export function AdminDashboard() {
     const stats = [

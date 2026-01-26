@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
-import { AdminSidebar } from '../../components/AdminSidebar';
+import { AdminSidebar } from "../../components/AdminSidebar.tsx";
 
 interface Blog {
     id: number;
