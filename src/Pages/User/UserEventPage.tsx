@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Navbar from "../components/Navbar.tsx";
+import UserNavbar from "../../components/UserNavbar.tsx";
 
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
@@ -96,7 +96,7 @@ const EventPage: React.FC = () => {
   return (
       <div className="min-h-screen bg-[#0A1128] text-white font-sans pb-12 pt-8">
         {/* Navbar */}
-        <Navbar />
+        <UserNavbar />
 
         {/* Header */}
         <div className="text-center mt-8">
