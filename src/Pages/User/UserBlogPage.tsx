@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Navbar from "../components/Navbar.tsx";
+import UserNavbar from "../../components/UserNavbar.tsx";
 
 interface BlogPost {
     id: number;
@@ -58,7 +58,7 @@ const CosmosBlogsPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0A1128]">
             {/* Navigation */}
-            <Navbar />
+            <UserNavbar />
 
             {/* Hero Section */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -135,6 +135,19 @@ const CosmosBlogsPage: React.FC = () => {
                             aria-label={`Go to slide ${index + 1}`}
                         />
                     ))}
+                </div>
+
+                {/* Write Blog Button */}
+                <div className="flex justify-center mt-8 ">
+                    <button
+                        type="button"
+                        onClick={() => { window.location.href = '/user-write-blog'; }}
+                        className="bg-[#2DD4BF] hover:bg-[#5EEAD4] text-[#0B1426] font-semibold px-6 py-2.5 rounded-lg transition flex items-center gap-2 shadow-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Write Blog
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, Hash, Twitter, Instagram, Facebook } from 'lucide-react';
-import Navbar from "../components/Navbar.tsx";
+import UserNavbar from "../../components/UserNavbar.tsx";
 
 const ContactUsPage: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ const ContactUsPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0A1128]">
             {/* Navigation */}
-            <Navbar />
+            <UserNavbar />
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto pt-16 pb-4">

@@ -1,6 +1,6 @@
 import React from 'react';
-import Navbar from "../components/Navbar.tsx";
-import audience from "../assets/audience.png";
+import audience from "../../assets/audience.png";
+import UserNavbar from "../../components/UserNavbar.tsx";
 
 interface TeamMember {
     id: number;
@@ -34,7 +34,7 @@ const AboutUsPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#0A1128]">
             {/* Navigation */}
-            <Navbar />
+            <UserNavbar />
 
             {/* Hero Section */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
