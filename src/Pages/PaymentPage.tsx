@@ -1,313 +1,228 @@
-import React, { useState } from 'react';
-import { CreditCard, Wallet, Lock, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CreditCard, Lock, CheckCircle } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { BookingStepper } from '../components/BookingStepper';
 
-interface OrderDetails {
-    show: string;
-    date: string;
-    showtime: string;
-    seats: string[];
-    subtotal: number;
-    bookingFee: number;
-}
+export function PaymentPage() {
+    const navigate = useNavigate();
+    const [paymentMethod, setPaymentMethod] = useState('card');
+    const [paymentComplete, setPaymentComplete] = useState(false);
 
-const PaymentPage: React.FC = () => {
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet'>('card');
-    const [cardNumber, setCardNumber] = useState('');
-    const [expiryDate, setExpiryDate] = useState('');
-    const [cvv, setCvv] = useState('');
-    const [cardHolder, setCardHolder] = useState('');
-    const [saveCard, setSaveCard] = useState(false);
+    const [formData, setFormData] = useState({
+        cardNumber: '',
+        cardName: '',
+        expiryDate: '',
+        cvv: ''
+    });
 
-    const order: OrderDetails = {
-        show: "Galaxies Nebulae",
-        date: "July 28, 2025",
-        showtime: "10.00 AM",
-        seats: ["C4", "C5", "C6"],
-        subtotal: 500,
-        bookingFee: 50
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPaymentComplete(true);
+        setTimeout(() => {
+            navigate('/user-home-page');
+        }, 3000);
     };
 
-    const total = order.subtotal + order.bookingFee;
+    const total = 50.65;
 
-    const steps = [
-        { number: 1, label: "Select Show", active: false },
-        { number: 2, label: "Choose Seats", active: false },
-        { number: 3, label: "Review Order", active: false },
-        { number: 4, label: "Payment", active: true }
-    ];
-
-    const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.replace(/\s/g, '');
-        if (value.length <= 16 && /^\d*$/.test(value)) {
-            setCardNumber(value);
-        }
-    };
-
-    const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length >= 2) {
-            value = value.slice(0, 2) + '/' + value.slice(2, 4);
-        }
-        if (value.length <= 5) {
-            setExpiryDate(value);
-        }
-    };
-
-    const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if (value.length <= 3 && /^\d*$/.test(value)) {
-            setCvv(value);
-        }
-    };
-
-    const handlePayment = () => {
-        console.log('Processing payment...');
-    };
+    if (paymentComplete) {
+        return (
+            <div className="min-h-screen bg-[#FEFCFB] flex items-center justify-center">
+                <div className="max-w-md w-full mx-4">
+                    <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+                        <div className="flex justify-center mb-6">
+                            <div className="bg-[#1282A2] p-4 rounded-full">
+                                <CheckCircle className="w-16 h-16 text-white" />
+                            </div>
+                        </div>
+                        <h2 className="text-3xl font-bold text-[#0A1128] mb-4">Payment Successful!</h2>
+                        <p className="text-[#0A1128]/70 mb-6">
+                            Your booking has been confirmed. A confirmation email has been sent to your registered email address.
+                        </p>
+                        <div className="bg-[#1282A2]/10 border border-[#1282A2]/20 p-4 rounded-lg mb-6">
+                            <p className="text-sm text-[#0A1128]">
+                                <strong>Booking Reference:</strong> PB2026012601
+                            </p>
+                        </div>
+                        <p className="text-sm text-[#0A1128]/60">Redirecting to home page...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-[#0A1128] text-white md:p-6">
-            {/* Header */}
-            <div className="max-w-6xl mx-auto mb-12">
-                <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
-                    Payment
-                </h1>
-                <p className="text-slate-300 text-center text-lg">
-                    Securely complete your booking by providing your payment details.
-                </p>
-            </div>
-
-            {/* Progress Steps */}
-            <div className="max-w-5xl mx-auto mb-12">
-                <div className="flex items-center justify-between">
-                    {steps.map((step, index) => (
-                        <React.Fragment key={step.number}>
-                            <div className="flex flex-col items-center">
-                                <div
-                                    className={`w-16 h-16 md:w-20 md:h-20 rounded-full border-4 flex items-center justify-center text-xl md:text-2xl font-bold transition-all ${
-                                        step.active
-                                            ? 'bg-slate-400 border-slate-400 text-slate-900'
-                                            : 'bg-transparent border-slate-200 text-slate-200'
-                                    }`}
-                                >
-                                    {step.number}
-                                </div>
-                                <span className="mt-3 text-sm md:text-base font-medium text-slate-200">
-                  {step.label}
-                </span>
-                            </div>
-                            {index < steps.length - 1 && (
-                                <div className="flex-1 h-1 bg-slate-200 mx-2 md:mx-4 mb-8" />
-                            )}
-                        </React.Fragment>
-                    ))}
+        <div className="min-h-screen bg-[#FEFCFB]">
+            <div className="bg-gradient-to-r from-[#0A1128] to-[#001F54] text-white py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <h1 className="text-4xl font-bold mb-2">Payment</h1>
+                    <p className="text-white/90">Complete your booking securely</p>
                 </div>
             </div>
 
-            {/* Payment Content */}
-            <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-                {/* Payment Method Card */}
-                <div className="bg-slate-300 rounded-2xl md:p-6 md:pb-0 p-4 pb-0">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-1.5">
-                        Payment Method
-                    </h2>
-                    <p className="text-slate-700 text-lg mb-2">
-                        Choose how you'd like to pay
-                    </p>
+            {/* Booking Stepper */}
+            <BookingStepper currentStep={4} />
 
-                    {/* Payment Method Toggle */}
-                    <div className="flex gap-3 mb-2">
-                        <button
-                            onClick={() => setPaymentMethod('card')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all ${
-                                paymentMethod === 'card'
-                                    ? 'bg-teal-500 text-white border-2 border-teal-600'
-                                    : 'bg-slate-200 text-slate-700 border-2 border-slate-300'
-                            }`}
-                        >
-                            <CreditCard size={20} />
-                            Credit/Debit Card
-                        </button>
-                        <button
-                            onClick={() => setPaymentMethod('wallet')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-all ${
-                                paymentMethod === 'wallet'
-                                    ? 'bg-teal-500 text-white border-2 border-teal-600'
-                                    : 'bg-slate-200 text-slate-700 border-2 border-slate-300'
-                            }`}
-                        >
-                            <Wallet size={20} />
-                            Digital Wallet
-                        </button>
-                    </div>
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="flex items-center gap-2 mb-6">
+                                <Lock className="w-5 h-5 text-[#1282A2]" />
+                                <h2 className="text-2xl font-bold text-[#0A1128]">Secure Payment</h2>
+                            </div>
 
-                    {/* Card Details Form */}
-                    {paymentMethod === 'card' && (
-                        <div className="space-y-4">
-                            <h3 className="text-2xl font-bold text-slate-900">Card Details</h3>
-
-                            {/* Card Number */}
-                            <div>
-                                <label className="block text-slate-700 font-semibold">
-                                    Card Number
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={cardNumber}
-                                        onChange={handleCardNumberChange}
-                                        placeholder="0000000000000000"
-                                        className="w-full px-4 py-3 bg-slate-100 border-2 border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                                    />
-                                    <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
+                            {/* Payment Method Selection */}
+                            <div className="mb-8">
+                                <h3 className="font-semibold text-[#0A1128] mb-4">Payment Method</h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <button
+                                        onClick={() => setPaymentMethod('card')}
+                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                            paymentMethod === 'card'
+                                                ? 'border-[#1282A2] bg-[#1282A2]/10'
+                                                : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
+                                        }`}
+                                    >
+                                        <CreditCard className="w-6 h-6 mx-auto mb-2 text-[#0A1128]" />
+                                        <p className="text-sm font-medium text-[#0A1128]">Credit Card</p>
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('debit')}
+                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                            paymentMethod === 'debit'
+                                                ? 'border-[#1282A2] bg-[#1282A2]/10'
+                                                : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
+                                        }`}
+                                    >
+                                        <CreditCard className="w-6 h-6 mx-auto mb-2 text-[#0A1128]" />
+                                        <p className="text-sm font-medium text-[#0A1128]">Debit Card</p>
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('upi')}
+                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                            paymentMethod === 'upi'
+                                                ? 'border-[#1282A2] bg-[#1282A2]/10'
+                                                : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
+                                        }`}
+                                    >
+                                        <CreditCard className="w-6 h-6 mx-auto mb-2 text-[#0A1128]" />
+                                        <p className="text-sm font-medium text-[#0A1128]">UPI</p>
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Expiry and CVV */}
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Card Details Form */}
+                            <form onSubmit={handleSubmit} className="space-y-6">
                                 <div>
-                                    <label className="block text-slate-700 font-semibold">
-                                        Expiry Date
-                                    </label>
-                                    <input
+                                    <Label htmlFor="cardName">Cardholder Name</Label>
+                                    <Input
+                                        id="cardName"
                                         type="text"
-                                        value={expiryDate}
-                                        onChange={handleExpiryChange}
-                                        placeholder="MM/YY"
-                                        className="w-full px-4 py-3 bg-slate-100 border-2 border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                                        placeholder="John Doe"
+                                        value={formData.cardName}
+                                        onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
+                                        className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20"
+                                        required
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-slate-700 font-semibold">
-                                        CVV
-                                    </label>
-                                    <div className="relative">
-                                        <input
+                                    <Label htmlFor="cardNumber">Card Number</Label>
+                                    <Input
+                                        id="cardNumber"
+                                        type="text"
+                                        placeholder="1234 5678 9012 3456"
+                                        value={formData.cardNumber}
+                                        onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
+                                        className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="expiryDate">Expiry Date</Label>
+                                        <Input
+                                            id="expiryDate"
                                             type="text"
-                                            value={cvv}
-                                            onChange={handleCvvChange}
-                                            placeholder="123"
-                                            className="w-full px-4 py-3 bg-slate-100 border-2 border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                                            placeholder="MM/YY"
+                                            value={formData.expiryDate}
+                                            onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                                            className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20"
+                                            required
                                         />
-                                        <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="cvv">CVV</Label>
+                                        <Input
+                                            id="cvv"
+                                            type="text"
+                                            placeholder="123"
+                                            value={formData.cvv}
+                                            onChange={(e) => setFormData({ ...formData, cvv: e.target.value })}
+                                            className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20"
+                                            required
+                                        />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Card Holder Name */}
-                            <div>
-                                <label className="block text-slate-700 font-semibold">
-                                    Card Holder Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={cardHolder}
-                                    onChange={(e) => setCardHolder(e.target.value)}
-                                    placeholder="Enter name as it appears on card"
-                                    className="w-full px-4 py-3 bg-slate-100 border-2 border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500"
-                                />
-                            </div>
-
-                            {/* Save Card Checkbox */}
-                            <div className="flex items-center gap-3 mb-0">
-                                <input
-                                    type="checkbox"
-                                    id="saveCard"
-                                    checked={saveCard}
-                                    onChange={(e) => setSaveCard(e.target.checked)}
-                                    className="w-5 h-5 rounded border-2 border-slate-400 text-teal-500 focus:ring-teal-500"
-                                />
-                                <label htmlFor="saveCard" className="text-slate-700 font-medium cursor-pointer">
-                                    Save this card for future payments
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
-                    {paymentMethod === 'wallet' && (
-                        <div className="text-center py-12">
-                            <Wallet className="mx-auto mb-4 text-slate-600" size={64} />
-                            <p className="text-slate-600 text-lg">Digital Wallet option coming soon</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Order Summary Card */}
-                <div className="space-y-6">
-                    <div className="bg-slate-300 rounded-2xl p-6 md:p-6">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                            Order Summary
-                        </h2>
-
-                        <div className="space-y-4 text-slate-700">
-                            <div className="flex justify-between items-center">
-                                <span className="font-semibold text-lg">Show:</span>
-                                <span className="font-bold text-slate-900 text-lg">
-                  {order.show}
-                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-semibold text-lg">Date:</span>
-                                <span className="font-bold text-slate-900 text-lg">
-                  {order.date}
-                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-semibold text-lg">Showtime:</span>
-                                <span className="font-bold text-slate-900 text-lg">
-                  {order.showtime}
-                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-semibold text-lg">Seats:</span>
-                                <span className="font-bold text-slate-900 text-lg">
-                  {order.seats.join(", ")}
-                </span>
-                            </div>
-
-                            <div className="border-t-2 border-slate-400 pt-4 mt-4 space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-semibold text-lg">Subtotal</span>
-                                    <span className="font-semibold text-lg">
-                    Rs.{order.subtotal}.00
-                  </span>
+                                <div className="bg-[#1282A2]/10 border border-[#1282A2]/20 p-4 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                        <Lock className="w-5 h-5 text-[#1282A2] mt-0.5" />
+                                        <p className="text-sm text-[#0A1128]">
+                                            Your payment information is encrypted and secure. We do not store your card details.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="font-semibold text-lg">Booking Fee</span>
-                                    <span className="font-semibold text-lg">
-                    Rs.{order.bookingFee}.00
-                  </span>
-                                </div>
-                            </div>
 
-                            <div className="border-t-2 border-slate-400 pt-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-2xl font-bold text-slate-900">Total</span>
-                                    <span className="text-2xl font-bold text-slate-900">
-                    Rs.{total}.00
-                  </span>
-                                </div>
-                            </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 bg-[#1282A2] hover:bg-[#034078] text-white rounded-md transition-colors font-medium"
+                                >
+                                    Pay ${total.toFixed(2)}
+                                </button>
+                            </form>
                         </div>
                     </div>
 
-                    {/* Pay Now Button */}
-                    <button
-                        onClick={handlePayment}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-3 text-xl"
-                    >
-                        <Shield size={24} />
-                        Pay Now
-                    </button>
+                    {/* Payment Summary */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-white p-6 rounded-lg shadow-lg sticky top-4">
+                            <h3 className="text-xl font-bold text-[#0A1128] mb-6">Payment Summary</h3>
 
-                    {/* Security Message */}
-                    <div className="flex items-center justify-center gap-2 text-slate-300">
-                        <Lock size={18} />
-                        <span className="text-sm">All transactions are secure and encrypted.</span>
+                            <div className="space-y-3 mb-6">
+                                <div className="pb-3 border-b border-[#0A1128]/10">
+                                    <p className="font-medium text-[#0A1128] mb-1">Journey to the Stars</p>
+                                    <p className="text-sm text-[#0A1128]/60">January 26, 2026 • 7:00 PM</p>
+                                </div>
+
+                                <div className="flex justify-between">
+                                    <span className="text-[#0A1128]/70">Seats (3 × $15.00)</span>
+                                    <span className="font-medium text-[#0A1128]">$45.00</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-[#0A1128]/70">Service Fee</span>
+                                    <span className="font-medium text-[#0A1128]">$2.50</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-[#0A1128]/70">Tax</span>
+                                    <span className="font-medium text-[#0A1128]">$3.15</span>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-[#0A1128]/10 pt-4">
+                                <div className="flex justify-between text-xl font-bold">
+                                    <span className="text-[#0A1128]">Total</span>
+                                    <span className="text-[#1282A2]">${total.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
-};
-
-export default PaymentPage;
+}
