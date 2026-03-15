@@ -163,7 +163,7 @@ const EventPage: React.FC = () => {
           {/* Blue Event Card */}
           <div className="border-2 border-[#0033FF] rounded-lg p-6 flex flex-col md:flex-row items-center gap-4 bg-[#10162A] shadow-md">
             <div className="flex-1">
-              <div className="font-bold text-lg">Solar Eclipse Viewing</div>
+              <div className="font-bold text-lg">Lunar Eclipse Viewing</div>
               <div className="text-[#B6C2E2] text-sm mt-1">
                 Explore the cosmos with our exciting events. From stargazing nights to expert talks, there's something for everyone.
               </div>
@@ -175,7 +175,7 @@ const EventPage: React.FC = () => {
           {/* Red Event Card */}
           <div className="border-2 border-[#FF3B3B] rounded-lg p-6 flex flex-col md:flex-row items-center gap-4 bg-[#10162A] shadow-md">
             <div className="flex-1">
-              <div className="font-bold text-lg">Solar Eclipse Viewing</div>
+              <div className="font-bold text-lg">Halley's Comet</div>
               <div className="text-[#B6C2E2] text-sm mt-1">
                 Explore the cosmos with our exciting events. From stargazing nights to expert talks, there's something for everyone.
               </div>
