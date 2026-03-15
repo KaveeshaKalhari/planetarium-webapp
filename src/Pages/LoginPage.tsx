@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
 
                 // Redirect to home/dashboard after 1 second
                 setTimeout(() => {
-                    navigate('/profile'); // Change to your dashboard route
+                    navigate('/user-home-page'); // Change to your dashboard route
                 }, 1000);
             } else {
                 setError(response.message || 'Login failed. Please try again.');
@@ -145,7 +145,7 @@ const LoginPage: React.FC = () => {
                 setSuccess('Google login successful! Redirecting...');
 
                 setTimeout(() => {
-                    navigate('/profile');
+                    navigate('/user-home-page');
                 }, 1000);
             } else {
                 setError(response.message || 'Google authentication failed');
