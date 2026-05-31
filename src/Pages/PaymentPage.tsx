@@ -25,7 +25,7 @@ export function PaymentPage() {
         }, 3000);
     };
 
-    const total = 50.65;
+    const total = 500.00; // Example total amount
 
     if (paymentComplete) {
         return (
@@ -80,7 +80,7 @@ export function PaymentPage() {
                                 <div className="grid grid-cols-3 gap-4">
                                     <button
                                         onClick={() => setPaymentMethod('card')}
-                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                        className={`p-4 border-2 rounded-lg transition-all Rs{
                                             paymentMethod === 'card'
                                                 ? 'border-[#1282A2] bg-[#1282A2]/10'
                                                 : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
@@ -91,7 +91,7 @@ export function PaymentPage() {
                                     </button>
                                     <button
                                         onClick={() => setPaymentMethod('debit')}
-                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                        className={`p-4 border-2 rounded-lg transition-all Rs{
                                             paymentMethod === 'debit'
                                                 ? 'border-[#1282A2] bg-[#1282A2]/10'
                                                 : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
@@ -102,7 +102,7 @@ export function PaymentPage() {
                                     </button>
                                     <button
                                         onClick={() => setPaymentMethod('upi')}
-                                        className={`p-4 border-2 rounded-lg transition-all ${
+                                        className={`p-4 border-2 rounded-lg transition-all Rs{
                                             paymentMethod === 'upi'
                                                 ? 'border-[#1282A2] bg-[#1282A2]/10'
                                                 : 'border-[#0A1128]/20 hover:border-[#1282A2]/50'
@@ -182,7 +182,7 @@ export function PaymentPage() {
                                     type="submit"
                                     className="w-full py-3 bg-[#1282A2] hover:bg-[#034078] text-white rounded-md transition-colors font-medium"
                                 >
-                                    Pay ${total.toFixed(2)}
+                                    Pay Rs{total.toFixed(2)}
                                 </button>
                             </form>
                         </div>
@@ -200,23 +200,23 @@ export function PaymentPage() {
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <span className="text-[#0A1128]/70">Seats (3 × $15.00)</span>
-                                    <span className="font-medium text-[#0A1128]">$45.00</span>
+                                    <span className="text-[#0A1128]/70">Seats (3 × Rs150.00)</span>
+                                    <span className="font-medium text-[#0A1128]">Rs 450.00</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-[#0A1128]/70">Service Fee</span>
-                                    <span className="font-medium text-[#0A1128]">$2.50</span>
+                                    <span className="font-medium text-[#0A1128]">Rs 2.50</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-[#0A1128]/70">Tax</span>
-                                    <span className="font-medium text-[#0A1128]">$3.15</span>
+                                    <span className="font-medium text-[#0A1128]">Rs 3.15</span>
                                 </div>
                             </div>
 
                             <div className="border-t border-[#0A1128]/10 pt-4">
                                 <div className="flex justify-between text-xl font-bold">
                                     <span className="text-[#0A1128]">Total</span>
-                                    <span className="text-[#1282A2]">${total.toFixed(2)}</span>
+                                    <span className="text-[#1282A2]">Rs{total.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

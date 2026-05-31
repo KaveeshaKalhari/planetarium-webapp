@@ -12,7 +12,7 @@ export function ReviewOrderPage() {
         duration: '45 minutes',
         venue: 'Main Planetarium Hall',
         seats: ['A5', 'A6', 'A7'],
-        pricePerSeat: 15,
+        pricePerSeat: 150,
         tax: 3.15,
         serviceFee: 2.50
     };
@@ -117,7 +117,7 @@ export function ReviewOrderPage() {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between">
                                     <span className="text-[#0A1128]/70">Subtotal ({bookingDetails.seats.length} × ${bookingDetails.pricePerSeat})</span>
-                                    <span className="font-medium text-[#0A1128]">${subtotal.toFixed(2)}</span>
+                                    <span className="font-medium text-[#0A1128]">Rs{subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-[#0A1128]/70">Service Fee</span>
@@ -125,7 +125,7 @@ export function ReviewOrderPage() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-[#0A1128]/70">Tax</span>
-                                    <span className="font-medium text-[#0A1128]">${bookingDetails.tax.toFixed(2)}</span>
+                                    <span className="font-medium text-[#0A1128]">Rs{bookingDetails.tax.toFixed(2)}</span>
                                 </div>
                             </div>
 

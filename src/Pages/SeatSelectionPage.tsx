@@ -29,7 +29,7 @@ export function SeatSelectionPage() {
         time: showDetails?.time || '7:00 PM',
         language: showDetails?.language || 'English',
         duration: '45 minutes',
-        pricePerSeat: 15.00
+        pricePerSeat: 150.00
     };
 
     function generateSeats(): Seat[] {
@@ -329,7 +329,7 @@ export function SeatSelectionPage() {
                                 <div className="space-y-3 mb-6">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-[#0A1128]/60">Price per seat</span>
-                                        <span className="text-[#0A1128]">${eventDetails.pricePerSeat.toFixed(2)}</span>
+                                        <span className="text-[#0A1128]">Rs{eventDetails.pricePerSeat.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-[#0A1128]/60">Number of seats</span>
@@ -338,7 +338,7 @@ export function SeatSelectionPage() {
                                     <div className="h-px bg-[#0A1128]/10"></div>
                                     <div className="flex justify-between font-bold text-lg">
                                         <span className="text-[#0A1128]">Total</span>
-                                        <span className="text-[#1282A2]">${totalPrice.toFixed(2)}</span>
+                                        <span className="text-[#1282A2]">Rs{totalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
 
