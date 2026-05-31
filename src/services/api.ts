@@ -139,4 +139,64 @@ export const login = async (credentials: LoginData): Promise<AuthResponse> => {
         }
     };
 
+    // ─── BLOG INTERFACES ──────────────────────────────────────────────────────────
+
+export interface BlogResponse {
+    id: number;
+    title: string;
+    category: string;
+    content: string;
+    excerpt: string;
+    imageUrl: string | null;
+    status: string;
+    authorName: string;
+    authorEmail: string;
+    submittedAt: string;
+    reviewedAt: string | null;
+    reviewedBy: string | null;
+}
+
+export interface BlogRequest {
+    title: string;
+    category: string;
+    content: string;
+    imageUrl?: string | null;
+}
+
+// ─── BLOG API FUNCTIONS ───────────────────────────────────────────────────────
+
+export const submitBlog = async (request: BlogRequest): Promise<BlogResponse> => {
+    const res = await api.post('/blogs', request);
+    return res.data;
+};
+
+export const getApprovedBlogs = async (): Promise<BlogResponse[]> => {
+    const res = await api.get('/blogs');
+    return res.data;
+};
+
+export const getMyBlogs = async (): Promise<BlogResponse[]> => {
+    const res = await api.get('/blogs/my');
+    return res.data;
+};
+
+export const getPendingBlogs = async (): Promise<BlogResponse[]> => {
+    const res = await api.get('/blogs/admin/pending');
+    return res.data;
+};
+
+export const approveBlog = async (blogId: number): Promise<BlogResponse> => {
+    const res = await api.put(`/blogs/admin/${blogId}/approve`);
+    return res.data;
+};
+
+export const rejectBlog = async (blogId: number): Promise<BlogResponse> => {
+    const res = await api.put(`/blogs/admin/${blogId}/reject`);
+    return res.data;
+};
+
+export const deleteBlog = async (blogId: number): Promise<void> => {
+    await api.delete(`/blogs/admin/${blogId}`);
+};
+
 export default api;
