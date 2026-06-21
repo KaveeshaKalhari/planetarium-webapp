@@ -1,5 +1,4 @@
 import { LogOut } from "lucide-react";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
 interface LogoutButtonProps {
@@ -10,31 +9,15 @@ export default function LogoutButton({ className = "" }: LogoutButtonProps) {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        Swal.fire({
-            title: "Are you sure?",
-            text: "You will be logged out from your account.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, Log out",
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // remove token or user data
-                localStorage.removeItem("accessToken");
+        if (confirm("Are you sure? You will be logged out from your account.")) {
+            // remove token or user data
+            localStorage.removeItem("accessToken");
 
-                // redirect to landing page
-                navigate("/");
+            // redirect to landing page
+            navigate("/");
 
-                Swal.fire({
-                    title: "Logged out",
-                    text: "You have been successfully logged out.",
-                    icon: "success",
-                    timer: 1200,
-                    showConfirmButton: false,
-                });
-            }
-        });
+            alert("You have been successfully logged out.");
+        }
     };
 
     return (

@@ -43,7 +43,8 @@ const LoginPage: React.FC = () => {
                 setSuccess('Login successful! Redirecting...');
                 if (response.token) localStorage.setItem('authToken', response.token);
                 if (response.user) localStorage.setItem('user', JSON.stringify(response.user));
-                setTimeout(() => navigate('/user-home-page'), 1000);
+                const role = response.role || response.user?.role;
+                setTimeout(() => navigate(role === 'ADMIN' ? '/admin-home-page' : '/user-home-page'), 1000);
             } else {
                 setError(response.message || 'Login failed. Please try again.');
             }
@@ -60,7 +61,8 @@ const LoginPage: React.FC = () => {
                 if (response.token) localStorage.setItem('authToken', response.token);
                 if (response.user) localStorage.setItem('user', JSON.stringify(response.user));
                 setSuccess('Google login successful! Redirecting...');
-                setTimeout(() => navigate('/user-home-page'), 1000);
+                const role = response.role || response.user?.role;
+                setTimeout(() => navigate(role === 'ADMIN' ? '/admin-home-page' : '/user-home-page'), 1000);
             } else { setError(response.message || 'Google authentication failed'); }
         } catch { setError('An unexpected error occurred with Google login.'); }
         finally { setLoading(false); }

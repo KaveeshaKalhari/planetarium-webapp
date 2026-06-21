@@ -1,39 +1,56 @@
+import { useState, useEffect } from 'react';
 import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import {AdminSidebar} from "../../components/AdminSidebar.tsx";
+import { AdminSidebar } from "../../components/AdminSidebar.tsx";
+import api from '../../services/api';
 
 export function AdminDashboard() {
+    const [summary, setSummary] = useState({ bookingsToday: 0, bookingsThisMonth: 0, revenueThisMonth: 0 });
+    const [bookingData, setBookingData] = useState<any[]>([]);
+    const [revenueData, setRevenueData] = useState<any[]>([]);
+    const [recentBookings, setRecentBookings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.allSettled([
+            api.get('/analytics/dashboard'),
+            api.get('/analytics/bookings?days=30'),
+            api.get('/analytics/revenue'),
+            api.get('/bookings/admin/all'),
+        ]).then(([dashRes, bookingRes, revenueRes, allBookingsRes]) => {
+            if (dashRes.status === 'fulfilled') {
+                setSummary(dashRes.value.data);
+            } else {
+                console.error('Dashboard summary failed:', dashRes.reason);
+            }
+
+            if (bookingRes.status === 'fulfilled') {
+                setBookingData(bookingRes.value.data.trend || []);
+            } else {
+                console.error('Booking trend failed:', bookingRes.reason);
+            }
+
+            if (revenueRes.status === 'fulfilled') {
+                setRevenueData(revenueRes.value.data.monthly || []);
+            } else {
+                console.error('Revenue failed:', revenueRes.reason);
+            }
+
+            if (allBookingsRes.status === 'fulfilled') {
+                // Show the most recently created bookings first
+                const sorted = [...(allBookingsRes.value.data || [])]
+                    .sort((a: any, b: any) => (b.id ?? 0) - (a.id ?? 0));
+                setRecentBookings(sorted.slice(0, 5));
+            } else {
+                console.error('Recent bookings failed:', allBookingsRes.reason);
+            }
+        }).finally(() => setLoading(false));
+    }, []);
+
     const stats = [
-        { label: 'Total Bookings', value: '1,248', icon: Calendar, color: 'bg-[#1282A2]' },
-        { label: 'Total Revenue', value: '$18,720', icon: DollarSign, color: 'bg-[#034078]' },
-        { label: 'Active Users', value: '856', icon: Users, color: 'bg-[#001F54]' },
-        { label: 'Growth Rate', value: '+12.5%', icon: TrendingUp, color: 'bg-[#1282A2]' }
-    ];
-
-    const bookingData = [
-        { month: 'Aug', bookings: 85 },
-        { month: 'Sep', bookings: 92 },
-        { month: 'Oct', bookings: 108 },
-        { month: 'Nov', bookings: 125 },
-        { month: 'Dec', bookings: 142 },
-        { month: 'Jan', bookings: 156 }
-    ];
-
-    const revenueData = [
-        { month: 'Aug', revenue: 1200 },
-        { month: 'Sep', revenue: 1450 },
-        { month: 'Oct', revenue: 1680 },
-        { month: 'Nov', revenue: 1920 },
-        { month: 'Dec', revenue: 2250 },
-        { month: 'Jan', revenue: 2640 }
-    ];
-
-    const recentBookings = [
-        { id: 'PB001', customer: 'John Doe', date: 'Jan 26', time: '7:00 PM', amount: '$45' },
-        { id: 'PB002', customer: 'Jane Smith', date: 'Jan 26', time: '3:00 PM', amount: '$54' },
-        { id: 'PB003', customer: 'Mike Johnson', date: 'Jan 25', time: '5:00 PM', amount: '$36' },
-        { id: 'PB004', customer: 'Sarah Williams', date: 'Jan 25', time: '8:00 PM', amount: '$60' },
-        { id: 'PB005', customer: 'Tom Brown', date: 'Jan 25', time: '7:00 PM', amount: '$45' }
+        { label: 'Bookings Today', value: summary.bookingsToday.toString(), icon: Calendar, color: 'bg-[#1282A2]' },
+        { label: 'Bookings This Month', value: summary.bookingsThisMonth.toString(), icon: TrendingUp, color: 'bg-[#034078]' },
+        { label: 'Revenue This Month', value: `Rs ${summary.revenueThisMonth.toFixed(2)}`, icon: DollarSign, color: 'bg-[#001F54]' },
     ];
 
     return (
@@ -47,7 +64,7 @@ export function AdminDashboard() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     {stats.map((stat, index) => (
                         <div key={index} className="bg-white p-6 rounded-lg shadow-lg">
                             <div className="flex items-center justify-between mb-4">
@@ -55,7 +72,9 @@ export function AdminDashboard() {
                                     <stat.icon className="w-6 h-6 text-white" />
                                 </div>
                             </div>
-                            <p className="text-2xl font-bold text-[#0A1128] mb-1">{stat.value}</p>
+                            <p className="text-2xl font-bold text-[#0A1128] mb-1">
+                                {loading ? '...' : stat.value}
+                            </p>
                             <p className="text-sm text-[#0A1128]/60">{stat.label}</p>
                         </div>
                     ))}
@@ -64,11 +83,11 @@ export function AdminDashboard() {
                 {/* Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-lg shadow-lg">
-                        <h3 className="text-lg font-semibold text-[#0A1128] mb-4">Booking Trends</h3>
+                        <h3 className="text-lg font-semibold text-[#0A1128] mb-4">Booking Trends (Last 30 Days)</h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={bookingData}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
+                                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                                 <YAxis />
                                 <Tooltip />
                                 <Legend />
@@ -78,7 +97,7 @@ export function AdminDashboard() {
                     </div>
 
                     <div className="bg-white p-6 rounded-lg shadow-lg">
-                        <h3 className="text-lg font-semibold text-[#0A1128] mb-4">Revenue Growth</h3>
+                        <h3 className="text-lg font-semibold text-[#0A1128] mb-4">Revenue Growth (Monthly)</h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={revenueData}>
                                 <CartesianGrid strokeDasharray="3 3" />
@@ -100,24 +119,68 @@ export function AdminDashboard() {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-[#0A1128]/5">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Booking ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Customer</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Time</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Amount</th>
-                            </tr>
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Booking Ref</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Customer</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Show Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Time</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Seats</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Amount</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#0A1128]/70 uppercase tracking-wider">Booked On</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-[#0A1128]/10">
-                            {recentBookings.map((booking) => (
-                                <tr key={booking.id} className="hover:bg-[#0A1128]/5">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0A1128]">{booking.id}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">{booking.customer}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">{booking.date}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">{booking.time}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1282A2]">{booking.amount}</td>
-                                </tr>
-                            ))}
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={9} className="px-6 py-8 text-center text-[#0A1128]/50">
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                ) : recentBookings.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={9} className="px-6 py-8 text-center text-[#0A1128]/50">
+                                            No bookings found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    recentBookings.map((booking: any) => {
+                                        return (
+                                            <tr key={booking.id} className="hover:bg-[#0A1128]/5">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#0A1128]">
+                                                    {booking.bookingReference}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${booking.audienceType === 'School Program'
+                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                        : 'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                        {booking.audienceType === 'School Program' ? 'School' : 'Public'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">
+                                                    <div className="font-medium">{booking.customerName || '—'}</div>
+                                                    <div className="text-xs text-[#0A1128]/50">{booking.customerEmail || ''}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">
+                                                    {booking.showDate?.toString()}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">
+                                                    {booking.showTime === 'morning' ? '10:00 AM' : '03:00 PM'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]">
+                                                    {booking.numberOfSeats}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1282A2]">
+                                                    Rs {booking.totalAmount?.toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0A1128]/60">
+                                                    {booking.createdAt || '—'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
                             </tbody>
                         </table>
                     </div>

@@ -306,7 +306,7 @@ const LandingPage: React.FC = () => {
                             className="title-glow"
                             style={{
                                 fontFamily: "'Raleway', sans-serif",
-                                fontSize: "clamp(3rem, 9vw, 7.5rem)",
+                                fontSize: "6rem",
                                 fontWeight: 900,
                                 lineHeight: 1.0,
                                 color: "#ffffff",
@@ -318,8 +318,8 @@ const LandingPage: React.FC = () => {
                         </h1>
                         <h2
                             style={{
-                                fontFamily: "'Raleway', sans-serif",
-                                fontSize: "clamp(8rem, 12vw, 7rem)",
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: "6rem",
                                 fontWeight: 600,
                                 color: "#219EBC",
                                 letterSpacing: "0.08em",

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Bell, Calendar, LogOut, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Bell, LogOut, X, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getMyNotifications, markAllNotificationsRead, markNotificationRead, type NotificationItem } from '../services/api';
 
 interface ProfileDropdownProps {
     isOpen: boolean;
@@ -10,257 +12,324 @@ interface ProfileDropdownProps {
 export function ProfileDropdown({ isOpen, onClose }: ProfileDropdownProps) {
     const navigate = useNavigate();
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [activeTab, setActiveTab] = useState<'notifications' | 'reservations'>('notifications');
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [loadingNotifs, setLoadingNotifs] = useState(false);
+    const [visible, setVisible] = useState(false);
 
-    // Sample data - replace with real data later
-    const notifications = [
-        {
-            id: 1,
-            title: 'Booking Confirmed',
-            message: 'Your reservation for "Journey to the Stars" is confirmed',
-            time: '2 hours ago',
-            read: false
-        },
-        {
-            id: 2,
-            title: 'Upcoming Show',
-            message: 'Your show starts in 24 hours. Don\'t forget!',
-            time: '5 hours ago',
-            read: false
-        },
-        {
-            id: 3,
-            title: 'Payment Successful',
-            message: 'Payment of $45.00 received successfully',
-            time: '1 day ago',
-            read: true
-        }
-    ];
-
-    const reservations = [
-        {
-            id: 'PB001',
-            show: 'Journey to the Stars',
-            date: 'Jan 28, 2026',
-            time: '7:00 PM',
-            seats: 2,
-            status: 'Confirmed',
-            amount: '$45.00'
-        },
-        {
-            id: 'PB002',
-            show: 'Cosmic Wonders',
-            date: 'Feb 05, 2026',
-            time: '3:00 PM',
-            seats: 3,
-            status: 'Confirmed',
-            amount: '$54.00'
-        },
-        {
-            id: 'PB003',
-            show: 'Solar System Adventure',
-            date: 'Jan 15, 2026',
-            time: '5:00 PM',
-            seats: 2,
-            status: 'Completed',
-            amount: '$36.00'
-        }
-    ];
-
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
     const userData = {
-        name: 'John Doe',
-        email: 'john.doe@email.com',
-        avatar: null
+        name: storedUser.username || storedUser.name || 'User',
+        email: storedUser.email || '',
     };
 
-    // Close dropdown when clicking outside
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (!isOpen) { setVisible(false); return; }
+        requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+        setLoadingNotifs(true);
+        getMyNotifications()
+            .then(setNotifications)
+            .catch(() => setNotifications([]))
+            .finally(() => setLoadingNotifs(false));
+    }, [isOpen]);
+
+    const handleMarkAllRead = async () => {
+        await markAllNotificationsRead();
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    };
+
+    const handleMarkOneRead = async (id: number) => {
+        await markNotificationRead(id);
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    };
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    // Outside click — document listener only, no overlay div
+    useEffect(() => {
+        if (!isOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 onClose();
             }
-        }
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
+        };
+        // Delay so the trigger button click doesn't immediately close
+        const t = setTimeout(() => document.addEventListener('click', handler), 150);
+        return () => {
+            clearTimeout(t);
+            document.removeEventListener('click', handler);
+        };
     }, [isOpen, onClose]);
 
     const handleLogout = () => {
-        // Clear any session data
         sessionStorage.clear();
         localStorage.clear();
         onClose();
         navigate('/');
     };
 
+    const getNotifColors = (type: string) => {
+        if (type === 'BLOG_APPROVED') return { border: 'rgba(16,185,129,0.45)', glow: 'rgba(16,185,129,0.1)', icon: '#10b981', badge: 'rgba(16,185,129,0.12)', dot: '#10b981' };
+        if (type === 'BLOG_REJECTED') return { border: 'rgba(239,68,68,0.45)', glow: 'rgba(239,68,68,0.1)', icon: '#f87171', badge: 'rgba(239,68,68,0.12)', dot: '#f87171' };
+        if (type === 'BOOKING_CONFIRMED') return { border: 'rgba(33,158,188,0.45)', glow: 'rgba(33,158,188,0.1)', icon: '#219EBC', badge: 'rgba(33,158,188,0.12)', dot: '#219EBC' };
+        return { border: 'rgba(33,158,188,0.45)', glow: 'rgba(33,158,188,0.1)', icon: '#219EBC', badge: 'rgba(33,158,188,0.12)', dot: '#219EBC' };
+    };
+
+    const getNotifEmoji = (type: string) => {
+        if (type === 'BLOG_APPROVED') return '✅';
+        if (type === 'BLOG_REJECTED') return '❌';
+        if (type === 'BOOKING_CONFIRMED') return '🎟️';
+        return '🔔';
+    };
+
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-start justify-end pt-16 pr-4">
-            {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/20" onClick={onClose}></div>
+    return createPortal(
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;600&display=swap');
 
-            {/* Dropdown */}
+                @keyframes notifSlide { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+                @keyframes shimmer    { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+                @keyframes bellWiggle { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-12deg)} 40%{transform:rotate(10deg)} 60%{transform:rotate(-6deg)} 80%{transform:rotate(4deg)} }
+
+                .pd-panel {
+                    position: fixed;
+                    top: 68px;
+                    right: 16px;
+                    z-index: 9999;
+                    width: 420px;
+                    max-width: calc(100vw - 32px);
+                    max-height: calc(100vh - 84px);
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    background: rgba(8,15,38,0.98);
+                    border: 1px solid rgba(33,158,188,0.28);
+                    border-radius: 20px;
+                    box-shadow:
+                        0 32px 80px rgba(0,0,0,0.8),
+                        0 0 0 1px rgba(33,158,188,0.08),
+                        0 0 60px rgba(33,158,188,0.07);
+                    /* NO pointer-events restrictions — everything clickable */
+                }
+                .pd-panel::before {
+                    content: '';
+                    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+                    background: linear-gradient(90deg, transparent, rgba(33,158,188,0.6), transparent);
+                    pointer-events: none; z-index: 0;
+                }
+
+                /* Soft page dimmer — sits BEHIND the panel using z-index */
+                .pd-dimmer {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0,0,0,0.4);
+                    backdrop-filter: blur(2px);
+                    z-index: 9998; /* one below the panel */
+                    pointer-events: none; /* NEVER intercept clicks */
+                }
+
+                .pd-header {
+                    background: linear-gradient(135deg, rgba(10,17,40,0.99), rgba(18,40,80,0.97));
+                    border-bottom: 1px solid rgba(33,158,188,0.15);
+                    padding: 20px 20px 18px;
+                    position: relative;
+                    flex-shrink: 0;
+                    z-index: 1;
+                }
+                .pd-avatar {
+                    width: 52px; height: 52px; border-radius: 50%;
+                    background: linear-gradient(135deg, #219EBC, #126782);
+                    display: flex; align-items: center; justify-content: center;
+                    border: 2px solid rgba(33,158,188,0.55);
+                    box-shadow: 0 0 18px rgba(33,158,188,0.35);
+                    flex-shrink: 0;
+                    font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 900; color: #fff;
+                }
+                .pd-close {
+                    position: absolute; top: 14px; right: 14px;
+                    width: 28px; height: 28px; border-radius: 50%;
+                    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; color: rgba(182,194,226,0.7);
+                    transition: background 0.2s, color 0.2s, transform 0.2s;
+                    z-index: 2;
+                }
+                .pd-close:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.45); color: #f87171; transform: scale(1.1); }
+
+                /* Section label (replaces old tabs) */
+                .pd-section-lbl {
+                    display: flex; align-items: center; gap: 8px;
+                    padding: 14px 18px 12px;
+                    border-bottom: 1px solid rgba(33,158,188,0.14);
+                    background: rgba(8,15,38,0.98);
+                    flex-shrink: 0;
+                    position: relative;
+                    z-index: 2;
+                    font-family: 'Raleway', sans-serif; font-size: 0.78rem; font-weight: 600;
+                    letter-spacing: 0.1em; text-transform: uppercase;
+                    color: #219EBC;
+                }
+                .pd-badge {
+                    background: #ef4444; color: #fff;
+                    font-size: 0.58rem; font-weight: 700;
+                    padding: 1px 6px; border-radius: 20px;
+                    min-width: 18px; text-align: center;
+                    box-shadow: 0 0 8px rgba(239,68,68,0.55);
+                    pointer-events: none;
+                }
+
+                .pd-body {
+                    flex: 1; overflow-y: auto; padding: 14px;
+                    position: relative; z-index: 1;
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(33,158,188,0.25) transparent;
+                }
+                .pd-body::-webkit-scrollbar { width: 4px; }
+                .pd-body::-webkit-scrollbar-thumb { background: rgba(33,158,188,0.25); border-radius: 4px; }
+
+                .pd-notif {
+                    border-radius: 12px; padding: 13px;
+                    position: relative; overflow: hidden; cursor: pointer;
+                    animation: notifSlide 0.32s cubic-bezier(.22,1,.36,1) both;
+                    transition: transform 0.22s;
+                    margin-bottom: 10px;
+                }
+                .pd-notif:hover { transform: translateX(3px); }
+                .pd-notif-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
+
+                .pd-mark-all {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    font-family: 'Raleway', sans-serif; font-size: 0.68rem; font-weight: 600;
+                    letter-spacing: 0.1em; text-transform: uppercase;
+                    color: rgba(33,158,188,0.75); background: none; border: none; cursor: pointer;
+                    padding: 5px 10px; border-radius: 18px;
+                    transition: color 0.2s, background 0.2s;
+                }
+                .pd-mark-all:hover { color: #219EBC; background: rgba(33,158,188,0.1); }
+
+                .pd-skeleton {
+                    height: 68px; border-radius: 12px; margin-bottom: 10px;
+                    background: linear-gradient(90deg, rgba(33,158,188,0.05) 25%, rgba(33,158,188,0.1) 50%, rgba(33,158,188,0.05) 75%);
+                    background-size: 200% 100%; animation: shimmer 1.5s infinite;
+                }
+
+                .pd-empty { text-align: center; padding: 40px 16px; }
+                .pd-bell-anim { animation: bellWiggle 2.5s ease-in-out infinite; }
+
+                .pd-footer {
+                    border-top: 1px solid rgba(33,158,188,0.12);
+                    padding: 12px 14px;
+                    background: rgba(6,12,30,0.98);
+                    flex-shrink: 0;
+                    z-index: 2;
+                    position: relative;
+                }
+                .pd-logout {
+                    width: 100%; padding: 11px; border-radius: 30px;
+                    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+                    color: #f87171; font-family: 'Raleway', sans-serif; font-weight: 600;
+                    font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase;
+                    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+                    transition: background 0.22s, border-color 0.22s, transform 0.22s, box-shadow 0.22s;
+                }
+                .pd-logout:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.55); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(239,68,68,0.2); }
+            `}</style>
+
+            {/* Visual dimmer only — pointer-events: none so it NEVER blocks clicks */}
+            <div className="pd-dimmer" />
+
+            {/* The actual panel — z-index 9999, fully interactive */}
             <div
                 ref={dropdownRef}
-                className="relative bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[calc(100vh-5rem)] overflow-hidden flex flex-col"
+                className="pd-panel"
+                style={{
+                    opacity: visible ? 1 : 0,
+                    transform: visible ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.97)',
+                    transition: 'opacity 0.3s cubic-bezier(.22,1,.36,1), transform 0.3s cubic-bezier(.22,1,.36,1)',
+                }}
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-[#0A1128] to-[#001F54] text-white p-6">
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-[#1282A2] rounded-full flex items-center justify-center">
-                            <User className="w-8 h-8 text-white" />
-                        </div>
+                <div className="pd-header">
+                    <button className="pd-close" onClick={onClose}><X size={14} /></button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div className="pd-avatar">{userData.name.charAt(0).toUpperCase()}</div>
                         <div>
-                            <h2 className="text-xl font-bold">{userData.name}</h2>
-                            <p className="text-sm text-white/80">{userData.email}</p>
+                            <h2 style={{ fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: '0.98rem', color: '#fff', margin: '0 0 3px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                {userData.name}
+                            </h2>
+                            <p style={{ color: 'rgba(182,194,226,0.5)', fontSize: '0.73rem', fontWeight: 300, margin: 0 }}>
+                                {userData.email}
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b border-[#0A1128]/10">
-                    <button
-                        onClick={() => setActiveTab('notifications')}
-                        className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                            activeTab === 'notifications'
-                                ? 'text-[#1282A2] border-b-2 border-[#1282A2]'
-                                : 'text-[#0A1128]/60 hover:text-[#0A1128]'
-                        }`}
-                    >
-                        <div className="flex items-center justify-center gap-2">
-                            <Bell className="w-4 h-4" />
-                            Notifications
-                            {notifications.filter(n => !n.read).length > 0 && (
-                                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {notifications.filter(n => !n.read).length}
-                </span>
-                            )}
-                        </div>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('reservations')}
-                        className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                            activeTab === 'reservations'
-                                ? 'text-[#1282A2] border-b-2 border-[#1282A2]'
-                                : 'text-[#0A1128]/60 hover:text-[#0A1128]'
-                        }`}
-                    >
-                        <div className="flex items-center justify-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Reservations
-                        </div>
-                    </button>
+                {/* Section label (replaces removed tabs) */}
+                <div className="pd-section-lbl">
+                    <Bell size={13} />
+                    Notifications
+                    {unreadCount > 0 && <span className="pd-badge">{unreadCount}</span>}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    {activeTab === 'notifications' && (
-                        <div className="space-y-3">
-                            {notifications.length === 0 ? (
-                                <div className="text-center py-8 text-[#0A1128]/60">
-                                    <Bell className="w-12 h-12 mx-auto mb-3 text-[#0A1128]/30" />
-                                    <p>No notifications</p>
-                                </div>
-                            ) : (
-                                notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className={`p-4 rounded-lg border transition-colors ${
-                                            notification.read
-                                                ? 'bg-white border-[#0A1128]/10'
-                                                : 'bg-[#1282A2]/5 border-[#1282A2]/20'
-                                        }`}
-                                    >
-                                        <div className="flex items-start justify-between mb-1">
-                                            <h4 className="font-semibold text-[#0A1128]">{notification.title}</h4>
-                                            {!notification.read && (
-                                                <span className="w-2 h-2 bg-[#1282A2] rounded-full"></span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-[#0A1128]/70 mb-2">{notification.message}</p>
-                                        <p className="text-xs text-[#0A1128]/50">{notification.time}</p>
-                                    </div>
-                                ))
-                            )}
+                {/* Body */}
+                <div className="pd-body">
+                    {unreadCount > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                            <button className="pd-mark-all" onClick={handleMarkAllRead}>
+                                <CheckCheck size={11} />Mark all read
+                            </button>
                         </div>
                     )}
-
-                    {activeTab === 'reservations' && (
-                        <div className="space-y-3">
-                            {reservations.length === 0 ? (
-                                <div className="text-center py-8 text-[#0A1128]/60">
-                                    <Calendar className="w-12 h-12 mx-auto mb-3 text-[#0A1128]/30" />
-                                    <p>No reservations yet</p>
-                                </div>
-                            ) : (
-                                reservations.map((reservation) => (
-                                    <div
-                                        key={reservation.id}
-                                        className="p-4 rounded-lg border border-[#0A1128]/10 hover:border-[#1282A2]/30 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <h4 className="font-semibold text-[#0A1128]">{reservation.show}</h4>
-                                                <p className="text-xs text-[#0A1128]/50">ID: {reservation.id}</p>
-                                            </div>
-                                            <span
-                                                className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                                    reservation.status === 'Confirmed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : reservation.status === 'Completed'
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-yellow-100 text-yellow-800'
-                                                }`}
-                                            >
-                        {reservation.status}
-                      </span>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2 text-sm text-[#0A1128]/70">
-                                            <div>
-                                                <p className="text-xs text-[#0A1128]/50">Date</p>
-                                                <p className="font-medium">{reservation.date}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-[#0A1128]/50">Time</p>
-                                                <p className="font-medium">{reservation.time}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-[#0A1128]/50">Seats</p>
-                                                <p className="font-medium">{reservation.seats}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-[#0A1128]/50">Amount</p>
-                                                <p className="font-medium text-[#1282A2]">{reservation.amount}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                    {loadingNotifs ? (
+                        [1, 2, 3].map(i => <div key={i} className="pd-skeleton" style={{ animationDelay: `${i * 0.08}s` }} />)
+                    ) : notifications.length === 0 ? (
+                        <div className="pd-empty">
+                            <Bell size={34} className="pd-bell-anim" style={{ color: 'rgba(33,158,188,0.35)', display: 'block', margin: '0 auto 12px' }} />
+                            <p style={{ fontFamily: "'Cinzel',serif", color: 'rgba(182,194,226,0.4)', fontSize: '0.86rem', fontWeight: 700, margin: '0 0 5px' }}>All caught up</p>
+                            <p style={{ color: 'rgba(182,194,226,0.25)', fontSize: '0.73rem', fontWeight: 300, margin: 0 }}>No notifications yet</p>
                         </div>
-                    )}
+                    ) : notifications.map((n, i) => {
+                        const c = getNotifColors(n.type);
+                        return (
+                            <div
+                                key={n.id}
+                                className="pd-notif"
+                                onClick={() => !n.isRead && handleMarkOneRead(n.id)}
+                                style={{
+                                    background: n.isRead ? 'rgba(255,255,255,0.03)' : c.badge,
+                                    border: `1px solid ${n.isRead ? 'rgba(255,255,255,0.07)' : c.border}`,
+                                    boxShadow: n.isRead ? 'none' : `0 3px 12px ${c.glow}`,
+                                    animationDelay: `${i * 0.05}s`,
+                                }}
+                            >
+                                <div className="pd-notif-bar" style={{ background: n.isRead ? 'rgba(255,255,255,0.07)' : c.dot }} />
+                                <div style={{ paddingLeft: 10 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                            <span style={{ fontSize: '0.82rem' }}>{getNotifEmoji(n.type)}</span>
+                                            <span style={{ fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: '0.78rem', color: n.isRead ? 'rgba(182,194,226,0.5)' : '#fff' }}>
+                                                {n.title}
+                                            </span>
+                                        </div>
+                                        {!n.isRead && <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, boxShadow: `0 0 5px ${c.dot}`, flexShrink: 0 }} />}
+                                    </div>
+                                    <p style={{ color: 'rgba(182,194,226,0.6)', fontSize: '0.74rem', lineHeight: 1.6, fontWeight: 300, margin: '0 0 4px' }}>{n.message}</p>
+                                    <p style={{ color: 'rgba(182,194,226,0.26)', fontSize: '0.64rem', margin: 0 }}>{n.createdAt}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                {/* Footer - Logout Button */}
-                <div className="border-t border-[#0A1128]/10 p-4">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        Logout
+                {/* Footer */}
+                <div className="pd-footer">
+                    <button className="pd-logout" onClick={handleLogout}>
+                        <LogOut size={14} />Logout
                     </button>
                 </div>
             </div>
-        </div>
+        </>,
+        document.body
     );
 }

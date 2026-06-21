@@ -19,20 +19,18 @@ function Calendar({
             classNames={{
                 months: "flex flex-col sm:flex-row gap-2",
                 month: "flex flex-col gap-4",
-                caption: "flex justify-center pt-1 relative items-center w-full",
                 caption_label: "text-sm font-medium",
                 nav: "flex items-center gap-1",
-                nav_button: cn(
+                day_button: cn(
                     buttonVariants({ variant: "outline" }),
                     "size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
                 ),
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse space-x-1",
-                head_row: "flex",
-                head_cell:
+                button_previous: "absolute left-1",
+                button_next: "absolute right-1",
+                // 'head_row' removed: not part of DayPicker's ClassNames type
+                // use 'weekday' for the weekday header cells
+                weekday:
                     "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
-                row: "flex w-full mt-2",
                 cell: cn(
                     "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md",
                     props.mode === "range"
@@ -56,16 +54,15 @@ function Calendar({
                 day_range_middle:
                     "aria-selected:bg-accent aria-selected:text-accent-foreground",
                 day_hidden: "invisible",
-                ...classNames,
-            }}
+            } as any}
             components={{
-                IconLeft: ({ className, ...props }) => (
+                IconLeft: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
                     <ChevronLeft className={cn("size-4", className)} {...props} />
                 ),
-                IconRight: ({ className, ...props }) => (
+                IconRight: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
                     <ChevronRight className={cn("size-4", className)} {...props} />
                 ),
-            }}
+            } as any}
             {...props}
         />
     );

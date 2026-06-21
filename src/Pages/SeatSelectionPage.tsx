@@ -1,255 +1,254 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Info, Calendar, Clock, Globe, GraduationCap } from 'lucide-react';
+import { getShowById } from '../services/api';
+import { Info, Calendar, Clock, Globe, ChevronRight } from 'lucide-react';
 import { BookingStepper } from '../components/BookingStepper';
 
 interface Seat {
-    id: string;
-    row: string;
-    number: number;
-    angle: number;
-    radius: number;
+    id: string; row: string; number: number;
+    angle: number; radius: number;
     status: 'available' | 'selected' | 'booked';
+}
+
+const ROW_CONFIG = [
+    { label: 'A', count: 20, radius: 260 },
+    { label: 'B', count: 24, radius: 232 },
+    { label: 'C', count: 28, radius: 204 },
+    { label: 'D', count: 32, radius: 176 },
+    { label: 'E', count: 36, radius: 148 },
+    { label: 'F', count: 40, radius: 120 },
+    { label: 'G', count: 44, radius: 92 },
+];
+
+function buildSeats(bookedSeatIds: string[], preSelectedSeatIds: string[] = []): Seat[] {
+    const bookedSet = new Set(bookedSeatIds);
+    const preSelectedSet = new Set(preSelectedSeatIds);
+    return ROW_CONFIG.flatMap(row => {
+        const angleStep = 360 / row.count;
+        return Array.from({ length: row.count }, (_, i) => {
+            const seatId = `${row.label}${i + 1}`;
+            const isBooked = bookedSet.has(seatId);
+            return {
+                id: seatId, row: row.label, number: i + 1,
+                angle: i * angleStep - 90, radius: row.radius,
+                status: isBooked ? 'booked' : preSelectedSet.has(seatId) ? 'selected' : 'available',
+            };
+        });
+    });
 }
 
 export function SeatSelectionPage() {
     const navigate = useNavigate();
-    //const { showId } = useParams();
     const location = useLocation();
-    const [seats, setSeats] = useState<Seat[]>(generateSeats());
-    const [showInfo, setShowInfo] = useState(false);
-
-    // Get show details from location state (from Show Availability page) or use defaults
+    const showId: number = location.state?.showId;
     const showDetails = location.state?.showDetails;
+    const schoolInfo = location.state?.schoolInfo;
+    const preSelectedSeatIds: string[] = location.state?.preSelectedSeatIds ?? [];
 
-    // Event details
+    const [seats, setSeats] = useState<Seat[]>([]);
+    const [showInfo, setShowInfo] = useState(false);
+    const [pageLoaded, setPageLoaded] = useState(false);
+    const [recentlySelected, setRecentlySelected] = useState<string | null>(null);
+
     const eventDetails = {
-        title: showDetails?.audienceType || 'Journey Through the Cosmos',
-        date: showDetails?.date || 'January 26, 2026',
-        time: showDetails?.time || '7:00 PM',
+        title: showDetails?.title || showDetails?.audienceType || 'Journey Through the Cosmos',
+        date: showDetails?.showDate || '—',
+        time: showDetails?.showTime === 'morning' ? '10:00 AM' : '03:00 PM',
         language: showDetails?.language || 'English',
-        duration: '45 minutes',
-        pricePerSeat: 150.00
+        pricePerSeat: showDetails?.pricePerSeat ?? (showDetails?.audienceType === 'School Program' ? 150.00 : 250.00),
     };
 
-    function generateSeats(): Seat[] {
-        const seats: Seat[] = [];
-        const rows = [
-            { label: 'A', count: 20, radius: 300, bookedSeats: [2, 5, 9, 15] },
-            { label: 'B', count: 24, radius: 270, bookedSeats: [3, 7, 11, 14, 19] },
-            { label: 'C', count: 28, radius: 240, bookedSeats: [1, 8, 15, 22] },
-            { label: 'D', count: 32, radius: 210, bookedSeats: [4, 9, 16, 20, 28] },
-            { label: 'E', count: 36, radius: 180, bookedSeats: [2, 12, 18, 25, 32] },
-            { label: 'F', count: 40, radius: 150, bookedSeats: [5, 13, 21, 29, 35] },
-            { label: 'G', count: 44, radius: 120, bookedSeats: [3, 11, 19, 27, 38] },
-        ];
-
-        rows.forEach(row => {
-            const angleStep = 360 / row.count;
-            for (let i = 0; i < row.count; i++) {
-                const angle = i * angleStep - 90;
-                seats.push({
-                    id: `${row.label}${i + 1}`,
-                    row: row.label,
-                    number: i + 1,
-                    angle,
-                    radius: row.radius,
-                    status: row.bookedSeats.includes(i + 1) ? 'booked' : 'available'
-                });
-            }
-        });
-
-        return seats;
-    }
+    useEffect(() => {
+        setTimeout(() => setPageLoaded(true), 80);
+        if (!showId) return;
+        getShowById(showId)
+            .then(show => setSeats(buildSeats(show.bookedSeatIds ?? [], preSelectedSeatIds)))
+            .catch(console.error);
+    }, [showId]);
 
     const handleSeatClick = (seatId: string) => {
         setSeats(seats.map(seat => {
-            if (seat.id === seatId && seat.status !== 'booked') {
-                return {
-                    ...seat,
-                    status: seat.status === 'selected' ? 'available' : 'selected'
-                };
-            }
+            if (seat.id === seatId && seat.status !== 'booked')
+                return { ...seat, status: seat.status === 'selected' ? 'available' : 'selected' };
             return seat;
         }));
+        setRecentlySelected(seatId);
+        setTimeout(() => setRecentlySelected(null), 550);
     };
 
-    const selectedSeats = seats.filter(seat => seat.status === 'selected');
+    const selectedSeats = seats.filter(s => s.status === 'selected');
     const totalPrice = selectedSeats.length * eventDetails.pricePerSeat;
 
     const getSeatColor = (status: string) => {
         switch (status) {
-            case 'available':
-                return '#1282A2';
-            case 'selected':
-                return '#34D399';
-            case 'booked':
-                return '#6B7280';
-            default:
-                return '#1282A2';
+            case 'available': return '#1E6B8C';
+            case 'selected': return '#F59E0B';
+            case 'booked': return '#DC2626';
+            default: return '#1E6B8C';
         }
     };
 
     const handleContinue = () => {
         if (selectedSeats.length > 0) {
-            sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
-            sessionStorage.setItem('totalPrice', totalPrice.toString());
-            navigate('/review-order');
+            navigate('/review-order', {
+                state: { showId, selectedSeats: selectedSeats.map(s => s.id), showDetails, pricePerSeat: eventDetails.pricePerSeat, schoolInfo }
+            });
         }
     };
 
+    // Map center and size — fits laptop without scroll
+    const MAP_SIZE = 430;
+    const CENTER = MAP_SIZE / 2;
+
     return (
-        <div className="min-h-screen bg-[#FEFCFB]">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#0A1128] to-[#001F54] text-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <h1 className="text-4xl font-bold mb-2">Choose Your Seats</h1>
-                    <p className="text-white/90">Select your preferred seats for the show</p>
+        <div className="h-screen flex flex-col overflow-hidden bg-[#F0F4F8]">
+            <style>{`
+                @keyframes seatPop { 0%{transform:translate(-50%,-50%) scale(1)} 40%{transform:translate(-50%,-50%) scale(1.7)} 75%{transform:translate(-50%,-50%) scale(0.88)} 100%{transform:translate(-50%,-50%) scale(1)} }
+                @keyframes pulseRing { 0%{opacity:0.8;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(2.6)} }
+                @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes orbitGlow { 0%,100%{opacity:0.15} 50%{opacity:0.3} }
+                @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+                @keyframes tagPop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+                .seat-pop { animation: seatPop 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+                .pulse-ring { animation: pulseRing 0.5s ease-out forwards; }
+                .fade-up { animation: fadeUp 0.4s ease both; }
+                .shimmer-btn { background: linear-gradient(90deg,#1282A2 0%,#219EBC 45%,#1282A2 100%); background-size:200% auto; animation: shimmer 2.4s linear infinite; }
+                .seat-tag { animation: tagPop 0.25s ease both; }
+            `}</style>
+
+            {/* ── Compact Header ── */}
+            <div className="bg-gradient-to-r from-[#0A1128] via-[#001F54] to-[#034078] text-white relative overflow-hidden shrink-0">
+                <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(18)].map((_, i) => (
+                        <div key={i} className="absolute rounded-full bg-white"
+                            style={{
+                                width: Math.random() * 2 + 0.5 + 'px', height: Math.random() * 2 + 0.5 + 'px',
+                                top: Math.random() * 100 + '%', left: Math.random() * 100 + '%', opacity: Math.random() * 0.35 + 0.1,
+                                animation: `orbitGlow ${Math.random() * 3 + 2}s ease-in-out infinite`, animationDelay: Math.random() * 3 + 's'
+                            }} />
+                    ))}
                 </div>
-            </div>
-
-            {/* Booking Stepper */}
-            <BookingStepper currentStep={2} />
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                {/* Show Info Banner */}
-                <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-[#0A1128] mb-3">{eventDetails.title}</h2>
-                            <div className="flex items-center gap-6 flex-wrap">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-[#034078]" />
-                                    <span className="text-[#0A1128]/70 text-sm">{eventDetails.date}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-[#034078]" />
-                                    <span className="text-[#0A1128]/70 text-sm font-semibold">{eventDetails.time}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Globe className="w-4 h-4 text-[#034078]" />
-                                    <span className="text-[#0A1128]/70 text-sm font-semibold">{eventDetails.language}</span>
-                                </div>
-                                {showDetails?.grade && (
-                                    <div className="flex items-center gap-2">
-                                        <GraduationCap className="w-4 h-4 text-[#034078]" />
-                                        <span className="text-[#0A1128]/70 text-sm font-semibold">Reserved for {showDetails.grade}</span>
-                                    </div>
-                                )}
+                <div className={`max-w-7xl mx-auto px-6 py-3 relative z-10 transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-lg font-bold">Choose Your Seats</h1>
+                                <span className="text-white/40 text-xs">— Step 2 of 4</span>
+                            </div>
+                            <div className="flex items-center gap-4 mt-0.5">
+                                <span className="text-white/60 text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />{eventDetails.date}</span>
+                                <span className="text-white/60 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />{eventDetails.time}</span>
+                                <span className="text-white/60 text-xs flex items-center gap-1"><Globe className="w-3 h-3" />{eventDetails.language}</span>
+                                <span className="text-white/60 text-xs font-semibold">{eventDetails.title}</span>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setShowInfo(!showInfo)}
-                            className="px-4 py-2 border-2 border-[#1282A2] text-[#1282A2] hover:bg-[#1282A2] hover:text-white rounded-md transition-colors flex items-center gap-2"
-                        >
-                            <Info className="w-4 h-4" />
-                            Show Info
+                        <button onClick={() => setShowInfo(!showInfo)}
+                            className="ml-auto px-3 py-1.5 border border-[#1282A2]/60 text-[#219EBC] hover:bg-[#1282A2]/20 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-xs font-semibold">
+                            <Info className="w-3.5 h-3.5" /> Info
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Left Column - Seating Map */}
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        {/* Instructions */}
-                        <div className="mb-6 text-center">
-                            <h3 className="text-xl font-semibold text-[#0A1128] mb-2">Select Your Seats</h3>
-                            <p className="text-[#0A1128]/60 text-sm">
-                                Click on available seats to select. Best viewing from center rows (D, E, F).
-                            </p>
+            {/* ── Stepper ── */}
+            <div className="shrink-0"><BookingStepper currentStep={2} /></div>
+
+            {/* ── Main Content ── */}
+            <div className={`flex-1 overflow-hidden transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="h-full max-w-7xl mx-auto px-4 py-3 flex gap-4">
+
+                    {/* ── Seat Map ── */}
+                    <div className="flex-1 bg-white rounded-xl shadow-sm border border-[#E2E8F0] flex flex-col p-3">
+                        <div className="text-center mb-1">
+                            <p className="text-xs font-semibold text-[#0A1128]">Planetarium Dome</p>
+                            <p className="text-[10px] text-[#0A1128]/40">Best viewing: Rows D, E, F</p>
                         </div>
 
-                        {/* Circular Seating Map */}
-                        <div className="flex items-center justify-center mb-6 overflow-hidden">
-                            <div className="relative" style={{ width: '550px', height: '550px' }}>
-                                {/* Central Overhead Dome Indicator */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                    <div className="relative w-28 h-28">
-                                        <div className="absolute inset-0 rounded-full bg-[#1282A2] opacity-20 blur-xl"></div>
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1282A2]/40 via-[#034078]/30 to-[#001F54]/20 border-2 border-[#1282A2]/60 backdrop-blur-sm">
-                                            <div className="absolute inset-2 rounded-full border border-[#1282A2]/30"></div>
-                                            <div className="absolute inset-4 rounded-full border border-[#1282A2]/20"></div>
+                        {/* Map */}
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="relative" style={{ width: MAP_SIZE + 'px', height: MAP_SIZE + 'px' }}>
+                                {/* Orbit rings */}
+                                {[0.95, 0.84, 0.73, 0.62, 0.51, 0.40, 0.30].map((r, i) => (
+                                    <div key={i} className="absolute rounded-full border border-[#1282A2]/06 pointer-events-none"
+                                        style={{ width: MAP_SIZE * r + 'px', height: MAP_SIZE * r + 'px', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+                                ))}
+
+                                {/* Central dome */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                                    <div className="relative w-16 h-16">
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1282A2]/30 via-[#034078]/20 to-[#001F54]/10 border-2 border-[#1282A2]/50">
+                                            <div className="absolute inset-2 rounded-full border border-[#1282A2]/25" />
                                         </div>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center z-10">
-                                            <svg className="w-7 h-7 text-[#1282A2] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <circle cx="12" cy="12" r="10" strokeWidth="1.5" strokeDasharray="2 2"/>
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <svg className="w-4 h-4 text-[#1282A2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" strokeWidth="1.5" strokeDasharray="2 2" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2v4m0 12v4M2 12h4m12 0h4" />
                                             </svg>
-                                            <div className="text-[10px] font-bold text-[#1282A2]">360° DOME</div>
-                                            <div className="text-[8px] text-[#0A1128]/60">PROJECTION</div>
+                                            <div className="text-[7px] font-bold text-[#1282A2] mt-0.5">DOME</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Entrance indicator */}
-                                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-                                    <div className="w-16 h-1 bg-[#1282A2] rounded"></div>
-                                    <div className="text-[10px] font-semibold text-[#1282A2]">ENTRANCE</div>
+                                {/* Entrance */}
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5">
+                                    <div className="w-10 h-px bg-[#1282A2]/60" />
+                                    <div className="text-[8px] font-bold text-[#1282A2]/60 tracking-widest">ENTRANCE</div>
                                 </div>
 
                                 {/* Seats */}
                                 {seats.map(seat => {
-                                    const scaledRadius = seat.radius * 0.8; // Scale down by 20%
-                                    const x = 275 + scaledRadius * Math.cos((seat.angle * Math.PI) / 180);
-                                    const y = 275 + scaledRadius * Math.sin((seat.angle * Math.PI) / 180);
+                                    const r = seat.radius * 0.82;
+                                    const x = CENTER + r * Math.cos((seat.angle * Math.PI) / 180);
+                                    const y = CENTER + r * Math.sin((seat.angle * Math.PI) / 180);
+                                    const isRecent = recentlySelected === seat.id;
+                                    const isSelected = seat.status === 'selected';
+                                    const isBooked = seat.status === 'booked';
 
                                     return (
-                                        <button
-                                            key={seat.id}
+                                        <button key={seat.id}
                                             onClick={() => handleSeatClick(seat.id)}
-                                            disabled={seat.status === 'booked'}
-                                            className="absolute transition-all duration-200 hover:scale-125 disabled:cursor-not-allowed group"
-                                            style={{
-                                                left: `${x}px`,
-                                                top: `${y}px`,
-                                                transform: 'translate(-50%, -50%)',
-                                            }}
-                                            title={`Seat ${seat.id} - ${seat.status}`}
+                                            disabled={isBooked}
+                                            className={`absolute group disabled:cursor-not-allowed ${isRecent ? 'seat-pop' : ''}`}
+                                            style={{ left: x + 'px', top: y + 'px', transform: 'translate(-50%,-50%)', zIndex: isSelected ? 5 : 1 }}
+                                            title={`${seat.id} — ${seat.status}`}
                                         >
-                                            <svg width="13" height="13" viewBox="0 0 20 20">
-                                                <rect
-                                                    x="2"
-                                                    y="6"
-                                                    width="16"
-                                                    height="12"
-                                                    rx="2"
+                                            {isRecent && isSelected && (
+                                                <div className="pulse-ring absolute rounded-full border-2 border-amber-400 pointer-events-none"
+                                                    style={{ width: '16px', height: '16px', top: '-1px', left: '-1px' }} />
+                                            )}
+                                            <svg width="11" height="11" viewBox="0 0 20 20">
+                                                {isSelected && (
+                                                    <filter id={`g-${seat.id}`}>
+                                                        <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                                        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                                                    </filter>
+                                                )}
+                                                <rect x="2" y="6" width="16" height="12" rx="2"
                                                     fill={getSeatColor(seat.status)}
-                                                    stroke={seat.status === 'selected' ? '#fff' : 'none'}
-                                                    strokeWidth="1.5"
-                                                />
-                                                <rect
-                                                    x="4"
-                                                    y="4"
-                                                    width="12"
-                                                    height="3"
-                                                    rx="1.5"
-                                                    fill={getSeatColor(seat.status)}
-                                                />
+                                                    stroke={isSelected ? '#FDE68A' : isBooked ? 'none' : 'rgba(255,255,255,0.1)'}
+                                                    strokeWidth={isSelected ? '1.5' : '0.8'}
+                                                    filter={isSelected ? `url(#g-${seat.id})` : undefined} />
+                                                <rect x="4" y="4" width="12" height="3" rx="1.5" fill={getSeatColor(seat.status)} opacity={isBooked ? 0.7 : 1} />
                                             </svg>
-                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#0A1128] px-2 py-0.5 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/20 shadow-lg text-white">
-                                                {seat.id}
-                                            </div>
+                                            {!isBooked && (
+                                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#0A1128] px-1.5 py-0.5 rounded text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-white/10 text-white z-50">
+                                                    {seat.id}{isSelected ? ' ✓' : ''}
+                                                </div>
+                                            )}
                                         </button>
                                     );
                                 })}
 
-                                {/* Row Labels */}
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                                {/* Row labels */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                                     {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((label, index) => {
-                                        const radius = (300 - (index * 30) + 20) * 0.8;
-                                        const angle = -95;
+                                        const radius = (260 - index * 28 + 16) * 0.82;
+                                        const angle = -96;
                                         const x = radius * Math.cos((angle * Math.PI) / 180);
                                         const y = radius * Math.sin((angle * Math.PI) / 180);
                                         return (
-                                            <div
-                                                key={label}
-                                                className="absolute text-[10px] font-bold text-white/90 bg-[#034078] px-1.5 py-0.5 rounded border border-[#1282A2]/40"
-                                                style={{
-                                                    left: `${x}px`,
-                                                    top: `${y}px`,
-                                                    transform: 'translate(-50%, -50%)',
-                                                }}
-                                            >
+                                            <div key={label} className="absolute text-[8px] font-bold text-white/80 bg-[#034078] px-1 py-0.5 rounded border border-[#1282A2]/30"
+                                                style={{ left: x + 'px', top: y + 'px', transform: 'translate(-50%,-50%)' }}>
                                                 {label}
                                             </div>
                                         );
@@ -259,122 +258,99 @@ export function SeatSelectionPage() {
                         </div>
 
                         {/* Legend */}
-                        <div className="flex justify-center items-center gap-6 pt-4 border-t border-[#0A1128]/10">
-                            <div className="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 20 20">
-                                    <rect x="2" y="6" width="16" height="12" rx="2" fill="#1282A2" />
-                                    <rect x="4" y="4" width="12" height="3" rx="1.5" fill="#1282A2" />
-                                </svg>
-                                <span className="text-xs text-[#0A1128]/70">Available</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 20 20">
-                                    <rect x="2" y="6" width="16" height="12" rx="2" fill="#34D399" stroke="#fff" strokeWidth="1.5" />
-                                    <rect x="4" y="4" width="12" height="3" rx="1.5" fill="#34D399" />
-                                </svg>
-                                <span className="text-xs text-[#0A1128]/70">Selected</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <svg width="16" height="16" viewBox="0 0 20 20">
-                                    <rect x="2" y="6" width="16" height="12" rx="2" fill="#6B7280" />
-                                    <rect x="4" y="4" width="12" height="3" rx="1.5" fill="#6B7280" />
-                                </svg>
-                                <span className="text-xs text-[#0A1128]/70">Booked</span>
-                            </div>
+                        <div className="flex justify-center items-center gap-5 pt-2 border-t border-[#E2E8F0]">
+                            {[
+                                { color: '#1E6B8C', stroke: 'none', label: 'Available' },
+                                { color: '#F59E0B', stroke: '#FDE68A', label: 'Your Selection' },
+                                { color: '#DC2626', stroke: 'none', label: 'Unavailable' },
+                            ].map(({ color, stroke, label }) => (
+                                <div key={label} className="flex items-center gap-1">
+                                    <svg width="12" height="12" viewBox="0 0 20 20">
+                                        <rect x="2" y="6" width="16" height="12" rx="2" fill={color} stroke={stroke} strokeWidth="1.5" />
+                                        <rect x="4" y="4" width="12" height="3" rx="1.5" fill={color} />
+                                    </svg>
+                                    <span className="text-[10px] text-[#0A1128]/60">{label}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Right Column - Booking Summary & Tips */}
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                            <div className="bg-[#034078] px-6 py-4">
-                                <h3 className="font-bold text-lg text-white">Booking Summary</h3>
+                    {/* ── Summary Panel ── */}
+                    <div className="w-56 flex flex-col gap-3">
+                        <div className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] overflow-hidden flex-1 flex flex-col">
+                            <div className="bg-gradient-to-r from-[#034078] to-[#1282A2] px-4 py-2.5">
+                                <h3 className="font-bold text-white text-sm">Booking Summary</h3>
                             </div>
-
-                            <div className="p-6">
-                                {/* Selected Seats */}
-                                <div className="mb-6">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-sm text-[#0A1128]/60">Selected Seats</span>
-                                        <span className="font-semibold text-[#0A1128]">{selectedSeats.length}</span>
+                            <div className="p-4 flex flex-col flex-1">
+                                {/* Selected seats */}
+                                <div className="mb-3">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs text-[#0A1128]/60">Selected Seats</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${selectedSeats.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-[#F1F5F9] text-[#0A1128]/40'}`}>
+                                            {selectedSeats.length}
+                                        </span>
                                     </div>
-
                                     {selectedSeats.length > 0 ? (
-                                        <div className="bg-[#FEFCFB] rounded-lg p-4 max-h-48 overflow-y-auto border border-[#0A1128]/10">
-                                            <div className="flex flex-wrap gap-2">
+                                        <div className="bg-[#F8FAFC] rounded-lg p-2 max-h-24 overflow-y-auto border border-[#E2E8F0]">
+                                            <div className="flex flex-wrap gap-1">
                                                 {selectedSeats.map(seat => (
-                                                    <div
-                                                        key={seat.id}
-                                                        className="bg-[#1282A2] px-3 py-1.5 rounded-md text-sm font-semibold text-white flex items-center gap-2"
-                                                    >
+                                                    <div key={seat.id} className="seat-tag bg-amber-400 text-amber-900 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1">
                                                         {seat.id}
-                                                        <button
-                                                            onClick={() => handleSeatClick(seat.id)}
-                                                            className="text-white/80 hover:text-white transition-colors"
-                                                        >
-                                                            ×
-                                                        </button>
+                                                        <button onClick={() => handleSeatClick(seat.id)} className="text-amber-700 hover:text-amber-900 font-bold leading-none">×</button>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="bg-[#FEFCFB] rounded-lg p-4 text-center text-sm text-[#0A1128]/40 border border-[#0A1128]/10">
-                                            No seats selected
+                                        <div className="bg-[#F8FAFC] rounded-lg p-3 text-center text-[10px] text-[#0A1128]/35 border border-dashed border-[#CBD5E1]">
+                                            Click seats on the map
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Price Breakdown */}
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[#0A1128]/60">Price per seat</span>
-                                        <span className="text-[#0A1128]">Rs{eventDetails.pricePerSeat.toFixed(2)}</span>
+                                {/* Pricing */}
+                                <div className="space-y-1.5 mb-3 pb-3 border-b border-[#E2E8F0] text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-[#0A1128]/60">Per seat</span>
+                                        <span className="text-[#0A1128]">Rs {eventDetails.pricePerSeat.toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[#0A1128]/60">Number of seats</span>
+                                    <div className="flex justify-between">
+                                        <span className="text-[#0A1128]/60">Seats</span>
                                         <span className="text-[#0A1128]">× {selectedSeats.length}</span>
                                     </div>
-                                    <div className="h-px bg-[#0A1128]/10"></div>
-                                    <div className="flex justify-between font-bold text-lg">
-                                        <span className="text-[#0A1128]">Total</span>
-                                        <span className="text-[#1282A2]">Rs{totalPrice.toFixed(2)}</span>
-                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="font-bold text-[#0A1128] text-sm">Total</span>
+                                    <span className={`text-base font-bold transition-all duration-300 ${selectedSeats.length > 0 ? 'text-[#1282A2]' : 'text-[#0A1128]/30'}`}>
+                                        Rs {totalPrice.toFixed(2)}
+                                    </span>
                                 </div>
 
-                                {/* Continue Button */}
-                                <button
-                                    onClick={handleContinue}
-                                    disabled={selectedSeats.length === 0}
-                                    className="w-full py-3 bg-[#1282A2] hover:bg-[#034078] disabled:bg-[#0A1128]/20 disabled:text-[#0A1128]/40 disabled:cursor-not-allowed text-white rounded-md font-semibold transition-colors mb-3"
-                                >
-                                    Continue to Review
-                                </button>
-
-                                <button
-                                    onClick={() => navigate('/select-datetime')}
-                                    className="w-full py-3 border-2 border-[#034078] text-[#034078] hover:bg-[#034078] hover:text-white rounded-md transition-colors font-semibold"
-                                >
-                                    Back to Date Selection
-                                </button>
-
-                                <p className="text-xs text-[#0A1128]/40 text-center mt-3">
-                                    Seats will be held for 10 minutes
-                                </p>
+                                <div className="mt-auto space-y-2">
+                                    <button onClick={handleContinue} disabled={selectedSeats.length === 0}
+                                        className={`w-full py-2.5 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-1.5 text-xs
+                                            ${selectedSeats.length > 0 ? 'shimmer-btn text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]'
+                                                : 'bg-[#F1F5F9] text-[#0A1128]/30 cursor-not-allowed'}`}>
+                                        Continue <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => navigate('/select-datetime', { state: { showId, showDetails, schoolInfo } })}
+                                        className="w-full py-2 border-2 border-[#034078] text-[#034078] hover:bg-[#034078] hover:text-white rounded-lg transition-all duration-150 font-semibold text-xs">
+                                        ← Back
+                                    </button>
+                                    <p className="text-[9px] text-[#0A1128]/35 text-center">Seats held for 10 minutes</p>
+                                </div>
                             </div>
                         </div>
 
                         {/* Tips */}
-                        <div className="bg-[#1282A2]/10 border border-[#1282A2]/20 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                                <Info className="w-4 h-4 text-[#1282A2] mt-0.5 flex-shrink-0" />
-                                <div className="text-xs text-[#0A1128]/70 space-y-1">
-                                    <p>• Best viewing: Rows D, E & F (center)</p>
-                                    <p>• 360° overhead dome projection</p>
-                                    <p>• Arrive 15 minutes early</p>
-                                    <p>• Wheelchair accessible in Row A</p>
-                                </div>
-                            </div>
+                        <div className="bg-gradient-to-br from-[#E0F2FE] to-[#F0F9FF] border border-[#BAE6FD] rounded-xl p-3">
+                            <p className="font-semibold text-[#034078] text-xs mb-1.5">Viewing Tips</p>
+                            <ul className="text-[10px] text-[#0A1128]/65 space-y-1">
+                                <li>🎯 Best: Rows D, E & F</li>
+                                <li>♿ Wheelchair: Row A</li>
+                                <li>🕐 Arrive 15 min early</li>
+                                <li>🔭 360° dome projection</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -382,33 +358,21 @@ export function SeatSelectionPage() {
 
             {/* Info Modal */}
             {showInfo && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full p-6">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowInfo(false)}>
+                    <div className="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl" onClick={e => e.stopPropagation()}
+                        style={{ animation: 'fadeUp 0.3s ease both' }}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-[#0A1128]">Show Information</h3>
-                            <button
-                                onClick={() => setShowInfo(false)}
-                                className="text-2xl text-[#0A1128]/60 hover:text-[#0A1128] transition-colors"
-                            >
-                                ×
-                            </button>
+                            <h3 className="text-base font-bold text-[#0A1128]">Show Information</h3>
+                            <button onClick={() => setShowInfo(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] text-[#0A1128]/50 hover:text-[#0A1128] transition-colors">×</button>
                         </div>
-                        <div className="space-y-3 text-sm text-[#0A1128]/80">
-                            <p>
-                                <strong className="text-[#0A1128]">Overhead Dome:</strong> Our planetarium features a 360° overhead projection dome. Recline and look upward for an immersive celestial experience.
-                            </p>
-                            <p>
-                                <strong className="text-[#0A1128]">Best Seats:</strong> Rows D, E and F (center rings) offer optimal viewing angles directly beneath the dome center.
-                            </p>
-                            <p>
-                                <strong className="text-[#0A1128]">Capacity:</strong> 224 seats arranged in 7 concentric circular rows around the central projection area.
-                            </p>
-                            <p>
-                                <strong className="text-[#0A1128]">Accessibility:</strong> Wheelchair accessible seating available in Row A. Please contact us for assistance.
-                            </p>
-                            <p>
-                                <strong className="text-[#0A1128]">Cancellation:</strong> Free cancellation up to 24 hours before the show.
-                            </p>
+                        <div className="space-y-2.5 text-xs text-[#0A1128]/70 leading-relaxed">
+                            {[
+                                ['360° Dome', 'Recline and look upward for a full celestial immersion.'],
+                                ['Best Seats', 'Rows D, E and F (center rings) offer optimal dome angles.'],
+                                ['Capacity', '224 seats in 7 concentric circular rows.'],
+                                ['Accessibility', 'Wheelchair accessible in Row A.'],
+                                ['Cancellation', 'Free cancellation up to 24 hours before the show.'],
+                            ].map(([t, b]) => <p key={t}><strong className="text-[#0A1128]">{t}:</strong> {b}</p>)}
                         </div>
                     </div>
                 </div>

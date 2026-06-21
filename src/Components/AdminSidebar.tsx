@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, DollarSign, FileText, MessageSquare, Rocket, CalendarDays, LogOut } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, DollarSign, FileText, MessageSquare, Rocket, CalendarDays, LogOut, Monitor } from 'lucide-react';
 
 export function AdminSidebar() {
     const location = useLocation();
@@ -8,6 +8,7 @@ export function AdminSidebar() {
 
     const menuItems = [
         { path: '/admin-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/show-management', icon: Monitor, label: 'Show Management' },
         { path: '/booking-analysis', icon: TrendingUp, label: 'Booking Analysis' },
         { path: '/revenue-analysis', icon: DollarSign, label: 'Revenue Analysis' },
         { path: '/event-management', icon: CalendarDays, label: 'Event Management' },

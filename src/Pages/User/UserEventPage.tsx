@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import UserNavbar from "../../components/UserNavbar.tsx";
+import { getUpcomingEvents, type EventDTO } from "../../services/api.ts";
+import UserNavbar from "../../components/UserNavbar";
+import EventDetailModal from "../../components/EventDetailModal";
+
 
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
@@ -75,22 +78,6 @@ const Calendar: React.FC<CalendarProps> = ({ year, month, highlights = {}, onDay
   );
 };
 
-type EventCard = {
-  id: number;
-  title: string;
-  description: string;
-  date: string;
-  type: HighlightType;
-  icon: string;
-  badge?: string;
-};
-
-const events: EventCard[] = [
-  { id: 1, title: "Solar Eclipse Viewing", description: "Witness a rare total solar eclipse through our specially equipped telescopes. Expert astronomers will guide you through this breathtaking celestial event.", date: "July 6, 2024 | 1:00 PM – 3:00 PM", type: "yellow", icon: "☀️", badge: "Special Event" },
-  { id: 2, title: "Lunar Eclipse Viewing", description: "Watch the Moon slip into Earth's shadow in a stunning display of celestial mechanics. Hot beverages and stargazing kits included.", date: "July 15, 2024 | 8:00 PM – 11:00 PM", type: "blue", icon: "🌕", badge: undefined },
-  { id: 3, title: "Halley's Comet Watch Night", description: "A once-in-a-generation opportunity to observe Halley's Comet with our high-powered observatory telescopes alongside leading astronomers.", date: "July 25, 2024 | 9:00 PM – 1:00 AM", type: "red", icon: "☄️", badge: "Rare Event" },
-];
-
 const BORDER_COLORS: Record<HighlightType, string> = {
   yellow: "rgba(255,214,0,0.55)",
   blue: "rgba(33,158,188,0.55)",
@@ -112,15 +99,41 @@ const TEXT_COLORS: Record<HighlightType, string> = {
   red: "#FF3B3B",
 };
 
+// Build calendar highlights from live events
+function buildHighlights(events: EventDTO[]): Record<number, HighlightType> {
+  const result: Record<number, HighlightType> = {};
+  events.forEach(ev => {
+    // eventDate is a string like "2026-07-06" — extract day number
+    const day = new Date(ev.eventDate).getDate();
+    result[day] = ev.type as HighlightType;
+  });
+  return result;
+}
+
 const EventPage: React.FC = () => {
-  const [leftYear, setLeftYear] = useState(2024);
-  const [leftMonth, setLeftMonth] = useState(6);
+  const [events, setEvents] = useState<EventDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [leftYear, setLeftYear] = useState(new Date().getFullYear());
+  const [leftMonth, setLeftMonth] = useState(new Date().getMonth());
   const [mounted, setMounted] = useState(false);
   const [sectionsVisible, setSectionsVisible] = useState([false, false, false]);
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+  const [subError, setSubError] = useState<string | null>(null);
+  const [alertDayBefore, setAlertDayBefore] = useState(true);
+  const [alertHourBefore, setAlertHourBefore] = useState(true);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [modalEvent, setModalEvent] = useState<EventDTO | null>(null);
+
+  useEffect(() => {
+    getUpcomingEvents()
+      .then(setEvents)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -154,8 +167,31 @@ const EventPage: React.FC = () => {
   let rightMonth = leftMonth + 1, rightYear = leftYear;
   if (rightMonth > 11) { rightMonth = 0; rightYear++; }
 
-  const highlights1: Record<number, HighlightType> = { 6: "yellow", 15: "blue", 25: "red" };
-  const highlights2: Record<number, HighlightType> = { 9: "blue" };
+  // Build highlights only for the months currently shown
+  const highlights1 = buildHighlights(
+    events.filter(ev => {
+      const d = new Date(ev.eventDate);
+      return d.getFullYear() === leftYear && d.getMonth() === leftMonth;
+    })
+  );
+  const highlights2 = buildHighlights(
+    events.filter(ev => {
+      const d = new Date(ev.eventDate);
+      return d.getFullYear() === rightYear && d.getMonth() === rightMonth;
+    })
+  );
+
+  const subscribeToEvents = async (email: string, alertDayBefore: boolean, alertHourBefore: boolean) => {
+    const res = await fetch("http://localhost:8080/api/v1/events/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, alertDayBefore, alertHourBefore }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message ?? "Failed to subscribe.");
+    }
+  };
 
   return (
     <>
@@ -186,7 +222,6 @@ const EventPage: React.FC = () => {
         .divider-line { display:inline-block;height:1px;background:linear-gradient(90deg,transparent,rgba(33,158,188,0.7),transparent);animation:lineExpand 1s cubic-bezier(.22,1,.36,1) 0.5s both;width:64px; }
         .eyebrow { font-family:'Raleway',sans-serif;font-size:0.68rem;letter-spacing:0.28em;text-transform:uppercase;color:#219EBC;border:1px solid rgba(33,158,188,0.35);border-radius:40px;padding:4px 16px;display:inline-block;margin-bottom:16px;background:rgba(33,158,188,0.07); }
 
-        /* Calendar card */
         .cal-card {
           background: rgba(15,24,52,0.75);
           border: 1px solid rgba(33,158,188,0.25);
@@ -202,7 +237,6 @@ const EventPage: React.FC = () => {
           animation: none;
         }
 
-        /* Nav arrow buttons */
         .nav-arrow {
           width: 44px; height: 44px; border-radius: 50%;
           border: 1px solid rgba(33,158,188,0.3);
@@ -220,7 +254,6 @@ const EventPage: React.FC = () => {
           color: #219EBC;
         }
 
-        /* Notify box */
         .notify-box {
           background: rgba(15,24,52,0.75);
           border: 1px solid rgba(33,158,188,0.3);
@@ -262,7 +295,6 @@ const EventPage: React.FC = () => {
           animation: none;
         }
 
-        /* Event cards */
         .event-card {
           background: rgba(15,24,52,0.75);
           border-radius: 18px; padding: 28px;
@@ -281,9 +313,7 @@ const EventPage: React.FC = () => {
           transition: width 0.3s;
         }
         .event-card:hover::before { width: 5px; }
-        .event-card:hover {
-          transform: translateX(6px) translateY(-3px);
-        }
+        .event-card:hover { transform: translateX(6px) translateY(-3px); }
 
         .event-icon {
           width: 48px; height: 48px; border-radius: 12px;
@@ -308,9 +338,7 @@ const EventPage: React.FC = () => {
           transition: background 0.22s, transform 0.22s, box-shadow 0.22s;
           background: transparent;
         }
-        .register-btn:hover {
-          transform: translateY(-2px);
-        }
+        .register-btn:hover { transform: translateY(-2px); }
 
         input[type="checkbox"] { accent-color: #219EBC; }
       `}</style>
@@ -341,10 +369,10 @@ const EventPage: React.FC = () => {
           {/* Header */}
           <div className={`text-center mt-14 mb-10 anim-enter ${mounted ? "anim-fade-down" : ""}`}>
             <h1 style={{ fontFamily: "'Raleway', sans-serif", fontSize: "clamp(2.4rem,6vw,4.5rem)", fontWeight: 900, color: "#fff", letterSpacing: "0.04em" }}>
-              Upcoming <span style={{ color: "#219EBC" }}>Events</span>
+              Natural <span style={{ color: "#219EBC" }}>Phenomena</span>
             </h1>
             <p style={{ color: "rgba(203,213,225,0.8)", maxWidth: 560, margin: "0 auto", fontWeight: 300, lineHeight: 1.75 }}>
-              Explore the cosmos with our exciting events. From stargazing nights to expert talks, there's something for everyone.
+              Witness the wonders of the natural world. From meteor showers to solar eclipses, stay informed about upcoming celestial and natural events.
             </p>
           </div>
 
@@ -374,18 +402,30 @@ const EventPage: React.FC = () => {
                   ) : (
                     <>
                       <input type="email" placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)} className="notify-input" />
-                      <button className="subscribe-btn" onClick={() => email && setSubscribed(true)}>Subscribe</button>
+                      <button className="subscribe-btn" disabled={subLoading} onClick={async () => {
+                        if (!email) return;
+                        setSubLoading(true); setSubError(null);
+                        try {
+                          await subscribeToEvents(email, alertDayBefore, alertHourBefore);
+                          setSubscribed(true);
+                        } catch {
+                          setSubError("Failed to subscribe. Please try again.");
+                        } finally { setSubLoading(false); }
+                      }}>{subLoading ? "..." : "Subscribe"}</button>
                     </>
                   )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: "0.75rem", color: "rgba(182,194,226,0.65)" }}>
                   <span style={{ letterSpacing: "0.08em" }}>Alert Preferences:</span>
-                  {["1 day before", "1 hour before"].map(label => (
-                    <label key={label} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                      <input type="checkbox" defaultChecked={label === "1 day before"} />
-                      {label}
-                    </label>
-                  ))}
+                  <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                    <input type="checkbox" checked={alertDayBefore} onChange={e => setAlertDayBefore(e.target.checked)} />
+                    1 day before
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                    <input type="checkbox" checked={alertHourBefore} onChange={e => setAlertHourBefore(e.target.checked)} />
+                    1 hour before
+                  </label>
+                  {subError && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{subError}</span>}
                 </div>
               </div>
             </div>
@@ -424,12 +464,23 @@ const EventPage: React.FC = () => {
             ref={el => { sectionRefs.current[2] = el; }}
             style={{ display: "flex", flexDirection: "column", gap: 16 }}
           >
+            {loading && (
+              <p style={{ color: "rgba(182,194,226,0.6)", textAlign: "center", padding: "40px 0" }}>Loading events...</p>
+            )}
+            {!loading && events.length === 0 && (
+              <p style={{ color: "rgba(182,194,226,0.6)", textAlign: "center", padding: "40px 0" }}>No upcoming events at this time.</p>
+            )}
             {events.map((ev, i) => {
+              const type = ev.type as HighlightType;
               const isHovered = hoveredCard === ev.id;
-              const borderColor = BORDER_COLORS[ev.type];
-              const glowColor = GLOW_COLORS[ev.type];
-              const badgeColor = BADGE_COLORS[ev.type];
-              const textColor = TEXT_COLORS[ev.type];
+              const borderColor = BORDER_COLORS[type];
+              const glowColor = GLOW_COLORS[type];
+              const badgeColor = BADGE_COLORS[type];
+              const textColor = TEXT_COLORS[type];
+              // Format date display: "July 6, 2026 | 1:00 PM – 3:00 PM"
+              const dateDisplay = ev.startTime && ev.endTime
+                ? `${ev.eventDate} | ${ev.startTime} – ${ev.endTime}`
+                : ev.eventDate;
 
               return (
                 <div
@@ -448,10 +499,7 @@ const EventPage: React.FC = () => {
 
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 16, paddingLeft: 8 }}>
                     {/* Icon */}
-                    <div
-                      className="event-icon"
-                      style={{ background: badgeColor, border: `1px solid ${borderColor}` }}
-                    >
+                    <div className="event-icon" style={{ background: badgeColor, border: `1px solid ${borderColor}` }}>
                       {ev.icon}
                     </div>
 
@@ -473,15 +521,16 @@ const EventPage: React.FC = () => {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, color: textColor, fontSize: "0.82rem", fontWeight: 600 }}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-                          {ev.date}
+                          {dateDisplay}
                         </div>
                         <button
                           className="register-btn"
                           style={{ borderColor, color: textColor }}
                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = badgeColor; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px ${glowColor}`; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
+                          onClick={() => setModalEvent(ev)}
                         >
-                          Register
+                          Learn More
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                         </button>
                       </div>
@@ -493,6 +542,7 @@ const EventPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <EventDetailModal event={modalEvent} onClose={() => setModalEvent(null)} />
     </>
   );
 };

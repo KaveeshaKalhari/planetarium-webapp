@@ -1,120 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUpcomingShows, type ShowDTO } from "../services/api";
 import { Calendar, Clock, Users, Info, ChevronRight, Globe, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar.tsx";
 
-// Mock data for available shows
-const generateAvailableShows = () => {
-    const shows = [];
-    const today = new Date();
-    const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'Grade 13'];
-
-    for (let i = 0; i < 21; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        const dayOfWeek = date.getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-        // Morning and afternoon shows
-        const morningSlots = Math.floor(Math.random() * 3); // 0 = Full, 1 = Limited, 2 = Available
-        const afternoonSlots = Math.floor(Math.random() * 3);
-
-        shows.push({
-            date: date,
-            dayName: date.toLocaleDateString('en-US', { weekday: 'long' }),
-            isWeekend,
-            audienceType: isWeekend ? 'Public Program' : 'School Program',
-            showTimes: [
-                {
-                    time: '10:00 AM',
-                    language: isWeekend ? 'Standard Program' : ['English', 'Sinhala', 'Tamil'][i % 3],
-                    availability: morningSlots === 0 ? 'Full' : morningSlots === 1 ? 'Limited' : 'Available',
-                    slotsLeft: morningSlots === 0 ? 0 : morningSlots === 1 ? 15 : 45,
-                    grade: isWeekend ? null : grades[i % grades.length] // Assign specific grade for school programs
-                },
-                {
-                    time: '02:00 PM',
-                    language: isWeekend ? 'Standard Program' : ['Tamil', 'English', 'Sinhala'][i % 3],
-                    availability: afternoonSlots === 0 ? 'Full' : afternoonSlots === 1 ? 'Limited' : 'Available',
-                    slotsLeft: afternoonSlots === 0 ? 0 : afternoonSlots === 1 ? 12 : 50,
-                    grade: isWeekend ? null : grades[(i + 1) % grades.length] // Assign different grade for afternoon
-                }
-            ]
-        });
-    }
-
-    return shows;
-};
-
 interface SelectedShow {
-    date: Date;
+    show: ShowDTO;
     time: string;
-    language: string;
-    audienceType: string;
-    grade?: string;
 }
 
 export default function ShowAvailability() {
-    const [availableShows] = useState(generateAvailableShows());
+    const [shows, setShows] = useState<ShowDTO[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedShow, setSelectedShow] = useState<SelectedShow | null>(null);
     const navigate = useNavigate();
 
-    const handleSelectShow = (show: any, showTime: any) => {
-        if (showTime.availability === 'Full') return;
+    useEffect(() => {
+        getUpcomingShows()
+            .then(setShows)
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
 
-        setSelectedShow({
-            date: show.date,
-            time: showTime.time,
-            language: showTime.language,
-            audienceType: show.audienceType,
-            grade: showTime.grade
-        });
+    const handleSelectShow = (show: ShowDTO) => {
+        if (show.availableSeats === 0) return;
+        setSelectedShow({ show, time: show.showTime === 'morning' ? '10:00 AM' : '02:00 PM' });
     };
 
     const handleProceed = () => {
         if (selectedShow) {
-            // Navigate to seat selection with show details
             navigate('/seat-selection', {
                 state: {
+                    showId: selectedShow.show.id,
                     showDetails: {
-                        date: selectedShow.date.toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                        }),
+                        date: selectedShow.show.showDate,
                         time: selectedShow.time,
-                        language: selectedShow.language,
-                        audienceType: selectedShow.audienceType,
-                        grade: selectedShow.grade
+                        language: selectedShow.show.language,
+                        audienceType: selectedShow.show.audienceType,
+                        grade: selectedShow.show.grade,
+                        pricePerSeat: selectedShow.show.pricePerSeat,
                     }
                 }
             });
         }
     };
 
-    const getAvailabilityColor = (availability: string) => {
-        switch (availability) {
-            case 'Available':
-                return 'text-[#1282A2] bg-[#1282A2]/10';
-            case 'Limited':
-                return 'text-orange-500 bg-orange-500/10';
-            case 'Full':
-                return 'text-gray-400 bg-gray-100';
-            default:
-                return '';
+    const getAvailabilityLabel = (show: ShowDTO): string => {
+        if (show.availableSeats === 0) return 'Full';
+        if (show.availableSeats <= 15) return 'Limited';
+        return 'Available';
+    };
+
+    const getAvailabilityColor = (label: string) => {
+        switch (label) {
+            case 'Available': return 'text-[#1282A2] bg-[#1282A2]/10';
+            case 'Limited': return 'text-orange-500 bg-orange-500/10';
+            case 'Full': return 'text-gray-400 bg-gray-100';
+            default: return '';
         }
     };
 
-    const isSelected = (show: any, showTime: any) => {
-        return selectedShow &&
-            selectedShow.date.getTime() === show.date.getTime() &&
-            selectedShow.time === showTime.time;
+    const isSelected = (show: ShowDTO) => {
+        return selectedShow?.show.id === show.id;
+    };
+
+    const isWeekend = (dateStr: string) => {
+        const day = new Date(dateStr).getDay();
+        return day === 0 || day === 6;
+    };
+
+    const formatDate = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return {
+            day: d.getDate(),
+            monthYear: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            dayName: d.toLocaleDateString('en-US', { weekday: 'long' }),
+        };
     };
 
     return (
         <div className="min-h-screen bg-[#FEFCFB]">
-        <UserNavbar />
+            <UserNavbar />
+
             {/* Header */}
             <div className="bg-gradient-to-r from-[#0A1128] to-[#001F54] text-white py-16">
                 <div className="max-w-7xl mx-auto px-6">
@@ -148,100 +115,99 @@ export default function ShowAvailability() {
 
             {/* Available Shows Grid */}
             <div className="max-w-7xl mx-auto px-6 pb-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {availableShows.map((show, idx) => (
-                        <div
-                            key={idx}
-                            className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                        >
-                            {/* Date Header */}
-                            <div className={`py-4 px-5 ${show.isWeekend ? 'bg-[#1282A2]/10' : 'bg-[#034078]/10'}`}>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <div className="text-2xl font-bold text-[#0A1128]">
-                                            {show.date.getDate()}
-                                        </div>
-                                        <div className="text-sm text-[#001F54] font-medium">
-                                            {show.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                        </div>
-                                        <div className="text-xs text-[#034078] mt-1">
-                                            {show.dayName}
-                                        </div>
-                                    </div>
-                                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${show.isWeekend ? 'bg-[#1282A2] text-white' : 'bg-[#034078] text-white'}`}>
-                                        {show.isWeekend ? 'Weekend' : 'Weekday'}
-                                    </div>
-                                </div>
-                            </div>
+                {loading ? (
+                    <div className="flex justify-center py-20 text-[#034078]">Loading shows...</div>
+                ) : shows.length === 0 ? (
+                    <div className="flex justify-center py-20 text-gray-400">No upcoming shows available.</div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {shows.map((show) => {
+                            const weekend = isWeekend(show.showDate);
+                            const { day, monthYear, dayName } = formatDate(show.showDate);
+                            const availLabel = getAvailabilityLabel(show);
+                            const timeLabel = show.showTime === 'morning' ? '10:00 AM' : '02:00 PM';
 
-                            {/* Audience Type */}
-                            <div className="px-5 pt-4 pb-3 border-b border-gray-100">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Users className="w-4 h-4 text-[#034078]" />
-                                    <span className="font-medium text-[#001F54]">{show.audienceType}</span>
-                                </div>
-                            </div>
-
-                            {/* Show Times */}
-                            <div className="p-5 space-y-3">
-                                {show.showTimes.map((showTime, timeIdx) => (
-                                    <button
-                                        key={timeIdx}
-                                        onClick={() => handleSelectShow(show, showTime)}
-                                        disabled={showTime.availability === 'Full'}
-                                        className={`w-full text-left border rounded-lg p-4 transition-all ${
-                                            isSelected(show, showTime)
-                                                ? 'border-[#1282A2] bg-[#1282A2]/5 shadow-md'
-                                                : showTime.availability === 'Full'
-                                                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                                                    : 'border-gray-200 hover:border-[#034078] hover:bg-[#034078]/5 cursor-pointer'
-                                        }`}
-                                    >
-                                        {/* Time */}
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Clock className="w-4 h-4 text-[#034078]" />
-                                            <span className="font-semibold text-[#0A1128]">{showTime.time}</span>
-                                        </div>
-
-                                        {/* Language Medium */}
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Globe className="w-4 h-4 text-[#001F54]" />
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-[#001F54]/60">Medium</span>
-                                                <span className="text-sm font-medium text-[#001F54]">{showTime.language}</span>
+                            return (
+                                <div
+                                    key={show.id}
+                                    className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    {/* Date Header */}
+                                    <div className={`py-4 px-5 ${weekend ? 'bg-[#1282A2]/10' : 'bg-[#034078]/10'}`}>
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="text-2xl font-bold text-[#0A1128]">{day}</div>
+                                                <div className="text-sm text-[#001F54] font-medium">{monthYear}</div>
+                                                <div className="text-xs text-[#034078] mt-1">{dayName}</div>
+                                            </div>
+                                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${weekend ? 'bg-[#1282A2] text-white' : 'bg-[#034078] text-white'}`}>
+                                                {weekend ? 'Weekend' : 'Weekday'}
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Grade Info for School Programs */}
-                                        {!show.isWeekend && showTime.grade && (
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <GraduationCap className="w-4 h-4 text-[#034078]" />
+                                    {/* Audience Type */}
+                                    <div className="px-5 pt-4 pb-3 border-b border-gray-100">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Users className="w-4 h-4 text-[#034078]" />
+                                            <span className="font-medium text-[#001F54]">{show.audienceType}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Show Time Slot */}
+                                    <div className="p-5">
+                                        <button
+                                            onClick={() => handleSelectShow(show)}
+                                            disabled={availLabel === 'Full'}
+                                            className={`w-full text-left border rounded-lg p-4 transition-all ${isSelected(show)
+                                                    ? 'border-[#1282A2] bg-[#1282A2]/5 shadow-md'
+                                                    : availLabel === 'Full'
+                                                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                                                        : 'border-gray-200 hover:border-[#034078] hover:bg-[#034078]/5 cursor-pointer'
+                                                }`}
+                                        >
+                                            {/* Time */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Clock className="w-4 h-4 text-[#034078]" />
+                                                <span className="font-semibold text-[#0A1128]">{timeLabel}</span>
+                                            </div>
+
+                                            {/* Language */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Globe className="w-4 h-4 text-[#001F54]" />
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs text-[#034078]/60">Reserved For</span>
-                                                    <span className="text-sm font-semibold text-[#034078]">
-                            {showTime.grade}
-                          </span>
+                                                    <span className="text-xs text-[#001F54]/60">Medium</span>
+                                                    <span className="text-sm font-medium text-[#001F54]">{show.language}</span>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* Availability Status */}
-                                        <div className="flex items-center justify-between">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getAvailabilityColor(showTime.availability)}`}>
-                        {showTime.availability}
-                      </span>
-                                            {showTime.availability !== 'Full' && (
-                                                <span className="text-xs text-gray-500">
-                          {showTime.slotsLeft} seats left
-                        </span>
+                                            {/* Grade (school programs only) */}
+                                            {show.audienceType === 'School Program' && show.grade && (
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <GraduationCap className="w-4 h-4 text-[#034078]" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs text-[#034078]/60">Reserved For</span>
+                                                        <span className="text-sm font-semibold text-[#034078]">{show.grade}</span>
+                                                    </div>
+                                                </div>
                                             )}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+
+                                            {/* Availability */}
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getAvailabilityColor(availLabel)}`}>
+                                                    {availLabel}
+                                                </span>
+                                                {availLabel !== 'Full' && (
+                                                    <span className="text-xs text-gray-500">{show.availableSeats} seats left</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Selection Summary & Proceed Button */}
@@ -249,16 +215,12 @@ export default function ShowAvailability() {
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
                     <div className="max-w-7xl mx-auto px-6 py-6">
                         <div className="flex items-center justify-between gap-6">
-                            {/* Selection Summary */}
                             <div className="flex items-center gap-8">
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Selected Date</div>
                                     <div className="font-semibold text-[#0A1128]">
-                                        {selectedShow.date.toLocaleDateString('en-US', {
-                                            weekday: 'long',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            year: 'numeric'
+                                        {new Date(selectedShow.show.showDate).toLocaleDateString('en-US', {
+                                            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
                                         })}
                                     </div>
                                 </div>
@@ -270,25 +232,23 @@ export default function ShowAvailability() {
                                 <div className="h-10 w-px bg-gray-300"></div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Language Medium</div>
-                                    <div className="font-semibold text-[#0A1128]">{selectedShow.language}</div>
+                                    <div className="font-semibold text-[#0A1128]">{selectedShow.show.language}</div>
                                 </div>
                                 <div className="h-10 w-px bg-gray-300"></div>
                                 <div>
                                     <div className="text-xs text-gray-500 mb-1">Program Type</div>
-                                    <div className="font-semibold text-[#0A1128]">{selectedShow.audienceType}</div>
+                                    <div className="font-semibold text-[#0A1128]">{selectedShow.show.audienceType}</div>
                                 </div>
-                                {selectedShow.audienceType === 'School Program' && selectedShow.grade && (
+                                {selectedShow.show.audienceType === 'School Program' && selectedShow.show.grade && (
                                     <>
                                         <div className="h-10 w-px bg-gray-300"></div>
                                         <div>
                                             <div className="text-xs text-gray-500 mb-1">Reserved For</div>
-                                            <div className="font-semibold text-[#0A1128]">{selectedShow.grade}</div>
+                                            <div className="font-semibold text-[#0A1128]">{selectedShow.show.grade}</div>
                                         </div>
                                     </>
                                 )}
                             </div>
-
-                            {/* Proceed Button */}
                             <button
                                 onClick={handleProceed}
                                 className="bg-[#1282A2] hover:bg-[#034078] text-white px-8 py-4 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-lg"

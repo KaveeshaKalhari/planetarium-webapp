@@ -298,7 +298,7 @@ const AboutUsPage: React.FC = () => {
                         ref={el => { sectionRefs.current[2] = el; }}
                         className={`text-center mb-14 anim-enter ${visible[2] ? "anim-fade-up" : ""}`}
                     >
-                        <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(2rem, 5vw, 3.5rem)", fontWeight: 900, color: "#fff", letterSpacing: "0.04em" }}>
+                        <h2 style={{ fontFamily: "'Raleway', sans-serif", fontSize: "clamp(2rem, 5vw, 3.5rem)", fontWeight: 900, color: "#fff", letterSpacing: "0.04em" }}>
                             Meet Our <span style={{ color: "#219EBC" }}>Team</span>
                         </h2>
                         <p style={{ color: "rgba(203,213,225,0.8)", maxWidth: 540, margin: "0 auto", fontWeight: 300, lineHeight: 1.75 }}>

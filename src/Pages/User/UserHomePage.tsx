@@ -182,7 +182,7 @@ const UserLandingPage: React.FC = () => {
                         transition: 'opacity 0.7s cubic-bezier(.22,1,.36,1), transform 0.7s cubic-bezier(.22,1,.36,1)',
                     }}
                 >
-                    <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: 'clamp(2rem,5vw,3.5rem)', fontWeight: 900, color: '#fff', letterSpacing: '0.04em', margin: '0 0 8px' }}>
+                    <h1 style={{ fontFamily: "'Raleway', sans-serif", fontSize: 'clamp(2rem,5vw,3.5rem)', fontWeight: 900, color: '#fff', letterSpacing: '0.04em', margin: '0 0 8px' }}>
                         Plan Your <span style={{ color: '#219EBC' }}>Visit</span>
                     </h1>
                     <p style={{ color: 'rgba(203,213,225,0.8)', fontSize: '1rem', fontWeight: 300, maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>

@@ -7,6 +7,11 @@ import { Label } from "../../components/ui/label.tsx";
 import UserNavbar from "../../components/UserNavbar.tsx";
 import { submitBlog } from '../../services/api.ts';
 
+const TITLE_MIN = 10;
+const TITLE_MAX = 100;
+const CONTENT_MIN = 100;
+const CONTENT_MAX = 5000;
+
 export function WriteBlogPage() {
     const navigate = useNavigate();
 
@@ -19,6 +24,20 @@ export function WriteBlogPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
+
+    const validate = (): string | null => {
+        if (formData.title.length < TITLE_MIN)
+            return `Title must be at least ${TITLE_MIN} characters.`;
+        if (formData.title.length > TITLE_MAX)
+            return `Title must not exceed ${TITLE_MAX} characters.`;
+        if (formData.content.length < CONTENT_MIN)
+            return `Content must be at least ${CONTENT_MIN} characters.`;
+        if (formData.content.length > CONTENT_MAX)
+            return `Content must not exceed ${CONTENT_MAX} characters.`;
+        if (!formData.image)                          // ← add this
+            return 'A featured image is required.';
+        return null;
+    };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -39,8 +58,8 @@ export function WriteBlogPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setError(null);
+        const validationError = validate();
+        if (validationError) { setError(validationError); return; }
 
         try {
             await submitBlog({
@@ -132,42 +151,75 @@ export function WriteBlogPage() {
 
                             {/* Title */}
                             <div>
-                                <Label htmlFor="title">Blog Title</Label>
+                                <div className="flex justify-between items-center mb-1">
+                                    <Label htmlFor="title">Blog Title</Label>
+                                    <span className={`text-xs ${formData.title.length > TITLE_MAX ? 'text-red-500' :
+                                        formData.title.length >= TITLE_MIN ? 'text-green-600' :
+                                            'text-[#0A1128]/40'
+                                        }`}>
+                                        {formData.title.length} / {TITLE_MAX}
+                                    </span>
+                                </div>
                                 <Input
                                     id="title"
                                     type="text"
                                     placeholder="Enter an engaging title for your blog"
                                     value={formData.title}
+                                    maxLength={TITLE_MAX}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20"
+                                    className={`mt-1 bg-[#FEFCFB] border-[#0A1128]/20 ${formData.title.length > 0 && formData.title.length < TITLE_MIN ? 'border-red-400' :
+                                        formData.title.length >= TITLE_MIN ? 'border-green-400' : ''
+                                        }`}
                                     required
                                 />
+                                {formData.title.length > 0 && formData.title.length < TITLE_MIN && (
+                                    <p className="text-xs text-red-500 mt-1">
+                                        Minimum {TITLE_MIN} characters ({TITLE_MIN - formData.title.length} more needed)
+                                    </p>
+                                )}
                             </div>
 
                             {/* Content */}
                             <div>
-                                <Label htmlFor="content">Content</Label>
+                                <div className="flex justify-between items-center mb-1">
+                                    <Label htmlFor="content">Content</Label>
+                                    <span className={`text-xs ${formData.content.length > CONTENT_MAX ? 'text-red-500' :
+                                        formData.content.length >= CONTENT_MIN ? 'text-green-600' :
+                                            'text-[#0A1128]/40'
+                                        }`}>
+                                        {formData.content.length} / {CONTENT_MAX}
+                                    </span>
+                                </div>
                                 <Textarea
                                     id="content"
-                                    placeholder="Write your blog content here... Share your insights, discoveries, or knowledge about astronomy and space science."
+                                    placeholder="Write your blog content here..."
                                     value={formData.content}
+                                    maxLength={CONTENT_MAX}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    className="mt-1 bg-[#FEFCFB] border-[#0A1128]/20 min-h-[400px]"
+                                    className={`mt-1 bg-[#FEFCFB] border-[#0A1128]/20 min-h-[400px] ${formData.content.length > 0 && formData.content.length < CONTENT_MIN ? 'border-red-400' :
+                                        formData.content.length >= CONTENT_MIN ? 'border-green-400' : ''
+                                        }`}
                                     required
                                 />
-                                <p className="text-sm text-[#0A1128]/60 mt-2">
-                                    Minimum 200 words recommended for quality content
-                                    {formData.content && (
-                                        <span className="ml-2 text-[#1282A2]">
-                                            ({formData.content.trim().split(/\s+/).length} words)
-                                        </span>
+                                <div className="flex justify-between mt-1">
+                                    {formData.content.length > 0 && formData.content.length < CONTENT_MIN ? (
+                                        <p className="text-xs text-red-500">
+                                            Minimum {CONTENT_MIN} characters ({CONTENT_MIN - formData.content.length} more needed)
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-[#0A1128]/60">
+                                            Minimum {CONTENT_MIN} characters required
+                                        </p>
                                     )}
-                                </p>
+                                    {formData.content.length >= CONTENT_MIN && (
+                                        <p className="text-xs text-green-600">✓ Looks good</p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Image upload */}
                             <div>
-                                <Label htmlFor="image">Featured Image (Optional)</Label>
+                                <Label htmlFor="image">Featured Image <span className="text-red-500">*</span></Label>
                                 <div className="mt-1">
                                     {!imagePreview ? (
                                         <label
@@ -212,8 +264,8 @@ export function WriteBlogPage() {
                             <div className="flex gap-4">
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    className="flex-1 py-3 bg-[#1282A2] hover:bg-[#034078] disabled:opacity-60 text-white rounded-md transition-colors font-medium flex items-center justify-center gap-2"
+                                    disabled={loading || formData.title.length < TITLE_MIN || formData.content.length < CONTENT_MIN || !formData.image}
+                                    className="flex-1 py-3 bg-[#1282A2] hover:bg-[#034078] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium flex items-center justify-center gap-2"
                                 >
                                     {loading
                                         ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
