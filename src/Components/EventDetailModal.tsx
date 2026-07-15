@@ -39,67 +39,6 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({ event, onClose }) =
 
   return (
     <>
-      <style>{`
-        @keyframes modalBackdropIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes modalPanelIn {
-          from { opacity: 0; transform: translateY(32px) scale(0.96); }
-          to   { opacity: 1; transform: translateY(0)    scale(1);    }
-        }
-
-        .modal-backdrop {
-          position: fixed; inset: 0; z-index: 1000;
-          background: rgba(5,10,30,0.85);
-          display: flex; align-items: center; justify-content: center;
-          padding: 20px;
-          backdrop-filter: blur(6px);
-          animation: modalBackdropIn 0.22s ease forwards;
-        }
-
-        .modal-panel {
-          background: rgba(12,20,48,0.97);
-          border-radius: 22px;
-          padding: 36px 40px;
-          max-width: 520px;
-          width: 100%;
-          position: relative;
-          animation: modalPanelIn 0.3s cubic-bezier(.22,1,.36,1) forwards;
-          font-family: 'Raleway', sans-serif;
-        }
-
-        .modal-close-btn {
-          position: absolute; top: 16px; right: 16px;
-          width: 32px; height: 32px; border-radius: 50%;
-          border: 1px solid rgba(182,194,226,0.25);
-          background: rgba(182,194,226,0.08);
-          color: rgba(182,194,226,0.7); font-size: 1rem;
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          transition: background 0.2s, color 0.2s;
-          line-height: 1;
-        }
-        .modal-close-btn:hover {
-          background: rgba(182,194,226,0.2);
-          color: #fff;
-        }
-
-        .modal-cta-btn {
-          width: 100%; padding: 12px; border-radius: 10px;
-          background: linear-gradient(135deg, #219EBC, #126782);
-          color: #fff; font-family: 'Raleway', sans-serif;
-          font-weight: 600; font-size: 0.85rem;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          border: none; cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .modal-cta-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 22px rgba(33,158,188,0.45);
-        }
-      `}</style>
-
       {/* Backdrop — click outside to close */}
       <div className="modal-backdrop" onClick={onClose}>
         <div

@@ -1,4 +1,4 @@
-import './App.css'
+import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import LandingPage from "./Pages/LandingPage.tsx";
 import EventPage from "./Pages/EventPage.tsx";
@@ -28,44 +28,196 @@ import AlertsPage from "./Pages/AlertsPage.tsx";
 import ShowAvailability from "./Pages/ShowAvailability.tsx";
 import { ChatPage } from "./Pages/ChatPage.tsx";
 import { BlogApproval } from "./Pages/Admin/BlogApproval.tsx";
-import { ShowManagement } from './Pages/Admin/ShowManagement.tsx';
+import { ShowManagement } from "./Pages/Admin/ShowManagement.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx"; // adjust path to match your project
 
 function App() {
-    return (
-        <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/events" element={<EventPage />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/about-us" element={<AboutUsPage />} />
-            <Route path="/contact-us" element={<ContactUs />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/sign-up" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/select-datetime" element={<DateTimeSelectionPage />} />
-            <Route path="/seat-selection" element={<SeatSelectionPage />} />
-            <Route path="/review-order" element={<ReviewOrderPage />} />
-            <Route path="/payment" element={<PaymentPage />} />
-            <Route path="/chat" element={<ChatPage />} />
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/events" element={<EventPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/about-us" element={<AboutUsPage />} />
+      <Route path="/contact-us" element={<ContactUs />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/sign-up" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-            <Route path="/user-home-page" element={<UserHomePage />} />
-            <Route path="/user-events" element={<UserEventPage />} />
-            <Route path="/user-blog" element={<UserBlogPage />} />
-            <Route path="/user-write-blog" element={<WriteBlogPage />} />
-            <Route path="/user-about-us" element={<UserAboutUsPage />} />
-            <Route path="/user-contact-us" element={<UserContactUs />} />
+      {/* Logged-in users only */}
+      <Route
+        path="/select-datetime"
+        element={
+          <ProtectedRoute>
+            <DateTimeSelectionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/seat-selection"
+        element={
+          <ProtectedRoute>
+            <SeatSelectionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/review-order"
+        element={
+          <ProtectedRoute>
+            <ReviewOrderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payment"
+        element={
+          <ProtectedRoute>
+            <PaymentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
 
-            <Route path="/user-alert" element={<AlertsPage />} />
-            <Route path="/show-availability" element={<ShowAvailability />} />
+      <Route
+        path="/user-home-page"
+        element={
+          <ProtectedRoute>
+            <UserHomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user-events"
+        element={
+          <ProtectedRoute>
+            <UserEventPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user-blog"
+        element={
+          <ProtectedRoute>
+            <UserBlogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user-write-blog"
+        element={
+          <ProtectedRoute>
+            <WriteBlogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user-about-us"
+        element={
+          <ProtectedRoute>
+            <UserAboutUsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user-contact-us"
+        element={
+          <ProtectedRoute>
+            <UserContactUs />
+          </ProtectedRoute>
+        }
+      />
 
-            <Route path="/admin-chat" element={<AdminChat />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/show-management" element={<ShowManagement />} />
-            <Route path="/admin-home-page" element={<AdminHomePage />} />
-            <Route path="/admin-blog" element={<BlogApproval />} />
-            <Route path="/booking-analysis" element={<BookingAnalysis />} />
-            <Route path="/event-management" element={<EventManagement />} />
-            <Route path="/revenue-analysis" element={<RevenueAnalysis />} />
-        </Routes>
-    )
+      <Route
+        path="/user-alert"
+        element={
+          <ProtectedRoute>
+            <AlertsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/show-availability"
+        element={
+          <ProtectedRoute>
+            <ShowAvailability />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admins only */}
+      <Route
+        path="/admin-chat"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <AdminChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/show-management"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <ShowManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-home-page"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <AdminHomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-blog"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <BlogApproval />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/booking-analysis"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <BookingAnalysis />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/event-management"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <EventManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/revenue-analysis"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <RevenueAnalysis />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
 }
 export default App;
