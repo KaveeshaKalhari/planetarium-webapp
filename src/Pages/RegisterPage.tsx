@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  type FC,
+  type ChangeEvent,
+  type CSSProperties,
+} from "react";
 import {
   User,
   Mail,
@@ -14,18 +20,20 @@ import { Link, useNavigate } from "react-router-dom";
 import { signUp, googleAuth } from "../services/api";
 import { type CredentialResponse, GoogleLogin } from "@react-oauth/google";
 
-const SignUpPage: React.FC = () => {
+const SignUpPage: FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
   });
+
   const [focused, setFocused] = useState({
     username: false,
     email: false,
     password: false,
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,11 +43,11 @@ const SignUpPage: React.FC = () => {
     email: "",
     password: "",
   });
+
   const [visible, setVisible] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   useEffect(() => {
-    // Use two ticks to ensure DOM is ready before triggering transition
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
   }, []);
 
@@ -52,7 +60,7 @@ const SignUpPage: React.FC = () => {
     return score;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     setErrors({ ...errors, [name]: "" });
@@ -68,9 +76,11 @@ const SignUpPage: React.FC = () => {
     else if (formData.username.length > 30)
       newErrors.username = "Username must be less than 30 characters";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!emailRegex.test(formData.email))
       newErrors.email = "Invalid email format";
+
     if (!formData.password) newErrors.password = "Password is required";
     else if (formData.password.length < 8)
       newErrors.password = "Password must be at least 8 characters";
@@ -157,8 +167,7 @@ const SignUpPage: React.FC = () => {
     },
   ];
 
-  // Inline transition styles — reliable across all browsers
-  const cardStyle: React.CSSProperties = {
+  const cardStyle: CSSProperties = {
     opacity: visible ? 1 : 0,
     transform: visible
       ? "scale(1) translateY(0)"
@@ -236,7 +245,7 @@ const SignUpPage: React.FC = () => {
                 height: s.s,
                 "--dur": s.dur,
                 "--delay": s.dl,
-              } as React.CSSProperties
+              } as CSSProperties
             }
           />
         ))}

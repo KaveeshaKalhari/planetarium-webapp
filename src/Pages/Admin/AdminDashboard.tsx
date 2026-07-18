@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AdminSidebar } from "../../components/AdminSidebar.tsx";
 import api from '../../services/api';

@@ -5,7 +5,6 @@ import {
   MapPin,
   CreditCard,
   ArrowRight,
-  CheckCircle2,
   ChevronLeft,
   Armchair,
 } from "lucide-react";

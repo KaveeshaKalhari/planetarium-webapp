@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, type FC, type ChangeEvent } from "react";
 import { EyeOff, Eye, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import PlanetariumLogo from "../assets/PlanetariumLogo.png";
 import { login, googleAuth } from "../services/api";
 import { type CredentialResponse, GoogleLogin } from "@react-oauth/google";
 
-const LoginPage: React.FC = () => {
+const LoginPage: FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     usernameOrEmail: "",
     password: "",
   });
+
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,7 @@ const LoginPage: React.FC = () => {
     usernameOrEmail: false,
     password: false,
   });
+
   const [errors, setErrors] = useState({ usernameOrEmail: "", password: "" });
   const [visible, setVisible] = useState(false);
 
@@ -27,7 +29,7 @@ const LoginPage: React.FC = () => {
     requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
     setError("");
@@ -55,6 +57,7 @@ const LoginPage: React.FC = () => {
         if (response.user)
           localStorage.setItem("user", JSON.stringify(response.user));
         const role = response.role || (response.user as any)?.role || "";
+        if (role) localStorage.setItem("role", role);
         setTimeout(
           () =>
             navigate(role === "ADMIN" ? "/admin-home-page" : "/user-home-page"),
@@ -88,6 +91,7 @@ const LoginPage: React.FC = () => {
           localStorage.setItem("user", JSON.stringify(response.user));
         setSuccess("Google login successful! Redirecting...");
         const role = response.role || (response.user as any)?.role;
+        if (role) localStorage.setItem("role", role);
         setTimeout(
           () =>
             navigate(role === "ADMIN" ? "/admin-home-page" : "/user-home-page"),

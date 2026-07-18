@@ -1,11 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getShowById } from "../services/api";
 import {
   Info,
-  Calendar,
-  Clock,
-  Globe,
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";

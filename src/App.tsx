@@ -30,6 +30,7 @@ import { ChatPage } from "./Pages/ChatPage.tsx";
 import { BlogApproval } from "./Pages/Admin/BlogApproval.tsx";
 import { ShowManagement } from "./Pages/Admin/ShowManagement.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx"; // adjust path to match your project
+import { TicketScanPage } from "./Pages/TicketScanPage.tsx";
 
 function App() {
   return (
@@ -214,6 +215,14 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["ADMIN"]}>
             <RevenueAnalysis />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ticket-scan"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <TicketScanPage />
           </ProtectedRoute>
         }
       />

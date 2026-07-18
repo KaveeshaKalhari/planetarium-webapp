@@ -29,7 +29,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - clear auth and redirect to login
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");
       localStorage.removeItem("role");
@@ -59,7 +58,6 @@ export interface LoginData {
   password: string;
 }
 
-// Specific response for signup/login
 export interface AuthResponse {
   role: "USER" | "ADMIN" | string | null;
   success: boolean;
@@ -70,10 +68,9 @@ export interface AuthResponse {
 
 // ============= AUTH FUNCTIONS =============
 
-// Sign up function
 export const signUp = async (userData: SignUpData): Promise<AuthResponse> => {
   try {
-    const response = await fetch("http://localhost:8080/api/v1/signup", {
+    const response = await fetch(`${API_BASE_URL}/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -95,7 +92,6 @@ export const signUp = async (userData: SignUpData): Promise<AuthResponse> => {
   }
 };
 
-// Login function
 export const login = async (credentials: LoginData): Promise<AuthResponse> => {
   try {
     const response = await fetch("http://localhost:8080/api/v1/login", {
@@ -120,7 +116,6 @@ export const login = async (credentials: LoginData): Promise<AuthResponse> => {
   }
 };
 
-// Google Authentication function
 export const googleAuth = async (token: string): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/google`, {
@@ -416,5 +411,10 @@ export const markNotificationRead = async (id: number): Promise<void> =>
 
 export const markAllNotificationsRead = async (): Promise<void> =>
   (await api.put("/notifications/read-all")).data;
+
+//PayHere Payment Integration
+
+export const initiatePayHerePayment = async (bookingId: number) =>
+  (await api.post("/payments/payhere/initiate", { bookingId })).data;
 
 export default api;

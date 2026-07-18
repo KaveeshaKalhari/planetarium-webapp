@@ -1,4 +1,4 @@
-import React from "react";
+import { type FC } from "react";
 
 interface BlogPost {
     id: number;
@@ -13,7 +13,7 @@ type BlogDetailModalProps = {
     onClose: () => void;
 };
 
-const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
+const BlogDetailModal: FC<BlogDetailModalProps> = ({
     blog,
     onClose,
 }) => {

@@ -1,104 +1,121 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CreditCard, Lock, CheckCircle, ChevronLeft } from "lucide-react";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { ShieldCheck, Lock, CheckCircle, ChevronLeft } from "lucide-react";
 import { BookingStepper } from "../components/BookingStepper";
 import api from "../services/api";
+
+// PayHere's JS SDK attaches itself to window at runtime
+declare global {
+  interface Window {
+    payhere: any;
+  }
+}
+
+const PAYHERE_SCRIPT_SRC = "https://www.payhere.lk/lib/payhere.js";
+
+// Loads the PayHere SDK once, reusing it if it's already on the page
+function loadPayHereScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.payhere) {
+      resolve();
+      return;
+    }
+    const existing = document.querySelector(
+      `script[src="${PAYHERE_SCRIPT_SRC}"]`,
+    );
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => reject());
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = PAYHERE_SCRIPT_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject();
+    document.body.appendChild(script);
+  });
+}
 
 export function PaymentPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { bookingId, total, showDetails, selectedSeats } = state || {};
 
-  const [paymentMethod, setPaymentMethod] = useState("card");
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [bookingRef, setBookingRef] = useState("");
   const [loading, setLoading] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
   const [successStep, setSuccessStep] = useState(0);
-  const [formData, setFormData] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: "",
-  });
-  const [cardErrors, setCardErrors] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: "",
-  });
+  const [errorMsg, setErrorMsg] = useState("");
+  const [sdkReady, setSdkReady] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setPageLoaded(true), 80);
   }, []);
 
-  const validateCardName = (v: string) => {
-    if (!v.trim()) return "Required.";
-    if (v.trim().length < 3) return "Too short.";
-    if (!/^[a-zA-Z\s]+$/.test(v)) return "Letters only.";
-    return "";
-  };
-  const validateCardNumber = (v: string) => {
-    const d = v.replace(/\s/g, "");
-    if (!d) return "Required.";
-    if (!/^\d+$/.test(d)) return "Digits only.";
-    if (d.length !== 16) return "16 digits required.";
-    return "";
-  };
-  const validateExpiryDate = (v: string) => {
-    if (!v) return "Required.";
-    if (!/^\d{2}\/\d{2}$/.test(v)) return "Use MM/YY.";
-    const [mm, yy] = v.split("/").map(Number);
-    if (mm < 1 || mm > 12) return "Invalid month.";
-    if (new Date(2000 + yy, mm - 1) < new Date()) return "Card expired.";
-    return "";
-  };
-  const validateCvv = (v: string) => {
-    if (!v) return "Required.";
-    if (!/^\d{3,4}$/.test(v)) return "3-4 digits.";
-    return "";
-  };
-  const formatCardNumber = (v: string) =>
-    v
-      .replace(/\D/g, "")
-      .slice(0, 16)
-      .replace(/(.{4})/g, "$1 ")
-      .trim();
-  const formatExpiry = (v: string) => {
-    const d = v.replace(/\D/g, "").slice(0, 4);
-    return d.length >= 3 ? d.slice(0, 2) + "/" + d.slice(2) : d;
-  };
+  useEffect(() => {
+    loadPayHereScript()
+      .then(() => setSdkReady(true))
+      .catch(() =>
+        setErrorMsg("Could not load the payment gateway. Please refresh."),
+      );
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors = {
-      cardName: validateCardName(formData.cardName),
-      cardNumber: validateCardNumber(formData.cardNumber),
-      expiryDate: validateExpiryDate(formData.expiryDate),
-      cvv: validateCvv(formData.cvv),
-    };
-    setCardErrors(errors);
-    if (Object.values(errors).some((err) => err)) return;
+  const handlePay = async () => {
+    if (!bookingId) {
+      setErrorMsg("Missing booking details. Please start over.");
+      return;
+    }
+    setErrorMsg("");
     setLoading(true);
     try {
-      const res = await api.post("/payments/process", {
-        bookingId,
-        paymentMethod: "CARD",
-        cardLastFour: formData.cardNumber.replace(/\s/g, "").slice(-4),
-        cardHolderName: formData.cardName,
+      const res = await api.post("/payments/payhere/initiate", { bookingId });
+      const payment = res.data;
+
+      window.payhere.onCompleted = function () {
+        // UI-only signal — the real confirmation comes from the backend
+        // once PayHere's server-to-server notify has been verified.
+        setBookingRef(payment.orderId);
+        setPaymentComplete(true);
+        setTimeout(() => setSuccessStep(1), 300);
+        setTimeout(() => setSuccessStep(2), 700);
+        setTimeout(() => setSuccessStep(3), 1100);
+        setTimeout(() => navigate("/user-home-page"), 5000);
+      };
+      window.payhere.onDismissed = function () {
+        setLoading(false);
+      };
+      window.payhere.onError = function (error: string) {
+        setLoading(false);
+        setErrorMsg("Payment failed: " + error);
+      };
+
+      window.payhere.startPayment({
+        sandbox: payment.sandbox,
+        merchant_id: payment.merchantId,
+        return_url: payment.returnUrl,
+        cancel_url: payment.cancelUrl,
+        notify_url: payment.notifyUrl,
+        order_id: payment.orderId,
+        items: payment.items,
+        amount: payment.amount,
+        currency: payment.currency,
+        hash: payment.hash,
+        first_name: payment.firstName,
+        last_name: payment.lastName,
+        email: payment.email,
+        phone: payment.phone,
+        address: payment.address,
+        city: payment.city,
+        country: payment.country,
       });
-      setBookingRef(res.data.bookingReference);
-      setPaymentComplete(true);
-      setTimeout(() => setSuccessStep(1), 300);
-      setTimeout(() => setSuccessStep(2), 700);
-      setTimeout(() => setSuccessStep(3), 1100);
-      setTimeout(() => navigate("/user-home-page"), 5000);
-    } catch {
-      alert("Payment failed. Please try again.");
-    } finally {
+    } catch (err: any) {
       setLoading(false);
+      setErrorMsg(
+        err?.response?.data?.message ||
+          "Could not start payment. Please try again.",
+      );
     }
   };
 
@@ -150,7 +167,7 @@ export function PaymentPage() {
     );
   }
 
-  // ── Main Form ──
+  // ── Main Page ──
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#F0F4F8]">
       {/* ── Header ── */}
@@ -202,228 +219,62 @@ export function PaymentPage() {
         className={`flex-1 overflow-hidden transition-all duration-500 ${pageLoaded ? "opacity-100" : "opacity-0"}`}
       >
         <div className="h-full max-w-5xl mx-auto px-4 py-3 flex gap-4">
-          {/* ── Payment Form ── */}
+          {/* ── Payment Panel ── */}
           <div className="flex-1 bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 fade-up flex flex-col">
-            {/* Secure header + Method tabs */}
-            <div className="flex items-center gap-4 mb-3 pb-3 border-b border-[#E2E8F0]">
-              <div className="flex items-center gap-2">
-                <div className="bg-[#EFF6FF] p-1.5 rounded-lg">
-                  <Lock className="w-4 h-4 text-[#1282A2]" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-[#0A1128]">
-                    Secure Payment
-                  </h2>
-                  <p className="text-[10px] text-[#0A1128]/50">
-                    256-bit SSL encrypted
-                  </p>
-                </div>
+            {/* Secure header */}
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[#E2E8F0]">
+              <div className="bg-[#EFF6FF] p-1.5 rounded-lg">
+                <Lock className="w-4 h-4 text-[#1282A2]" />
               </div>
-              <div className="flex gap-2 ml-auto">
-                {[
-                  { id: "card", label: "Credit Card" },
-                  { id: "debit", label: "Debit Card" },
-                ].map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setPaymentMethod(id)}
-                    className={`px-3 py-1.5 border-2 rounded-lg transition-all duration-150 flex items-center gap-1.5 text-xs font-semibold
-                                            ${paymentMethod === id ? "border-[#1282A2] bg-[#EFF6FF] text-[#1282A2]" : "border-[#E2E8F0] hover:border-[#1282A2]/40 text-[#0A1128]/60"}`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div>
+                <h2 className="text-sm font-bold text-[#0A1128]">
+                  Secure Payment
+                </h2>
+                <p className="text-[10px] text-[#0A1128]/50">
+                  Processed securely by PayHere — we never see or store your
+                  card details
+                </p>
               </div>
             </div>
 
-            {/* Card preview */}
-            <div className="card-flip mb-3 bg-gradient-to-br from-[#034078] via-[#1282A2] to-[#219EBC] rounded-xl p-4 text-white relative overflow-hidden h-28 shadow-lg shrink-0">
+            {/* PayHere branding panel */}
+            <div className="card-flip mb-3 bg-gradient-to-br from-[#034078] via-[#1282A2] to-[#219EBC] rounded-xl p-4 text-white relative overflow-hidden h-28 shadow-lg shrink-0 flex items-center justify-center">
               <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
               <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/4" />
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-white/50 text-[9px] uppercase tracking-wider mb-0.5">
-                      Cardholder
-                    </p>
-                    <p className="font-semibold text-xs">
-                      {formData.cardName || "Your Name"}
-                    </p>
-                  </div>
-                  <CreditCard className="w-6 h-6 text-white/50" />
-                </div>
-                <div>
-                  <p className="font-mono text-sm tracking-[0.18em] mb-1.5">
-                    {formData.cardNumber
-                      ? formData.cardNumber
-                          .padEnd(19, " ")
-                          .replace(/\d(?=.{5})/g, "•")
-                      : "•••• •••• •••• ••••"}
-                  </p>
-                  <div className="flex gap-5">
-                    <div>
-                      <p className="text-white/40 text-[8px] uppercase">
-                        Expires
-                      </p>
-                      <p className="text-xs font-mono">
-                        {formData.expiryDate || "MM/YY"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-white/40 text-[8px] uppercase">CVV</p>
-                      <p className="text-xs font-mono">
-                        {formData.cvv ? "•".repeat(formData.cvv.length) : "•••"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <div className="relative z-10 flex flex-col items-center gap-1.5 text-center">
+                <ShieldCheck className="w-7 h-7 text-white/80" />
+                <p className="text-sm font-semibold">
+                  You'll be redirected to PayHere's secure checkout
+                </p>
+                <p className="text-[10px] text-white/60">
+                  Visa • MasterCard • Amex • Bank transfer
+                </p>
               </div>
             </div>
 
-            {/* Form fields */}
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-2.5 flex-1"
-            >
-              {/* Name */}
-              <div>
-                <Label
-                  htmlFor="cardName"
-                  className="text-[10px] font-semibold text-[#0A1128]/70 uppercase tracking-wide"
-                >
-                  Cardholder Name
-                </Label>
-                <Input
-                  id="cardName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.cardName}
-                  onChange={(e) => {
-                    setFormData({ ...formData, cardName: e.target.value });
-                    setCardErrors((p) => ({
-                      ...p,
-                      cardName: validateCardName(e.target.value),
-                    }));
-                  }}
-                  className={`mt-1 bg-[#F8FAFC] rounded-lg h-8 text-sm ${cardErrors.cardName ? "input-error" : formData.cardName && !cardErrors.cardName ? "input-valid" : "border-[#E2E8F0]"}`}
-                  required
-                />
-                {cardErrors.cardName && (
-                  <p className="text-[10px] text-red-500 mt-0.5">
-                    {cardErrors.cardName}
-                  </p>
-                )}
-              </div>
-
-              {/* Card Number */}
-              <div>
-                <Label
-                  htmlFor="cardNumber"
-                  className="text-[10px] font-semibold text-[#0A1128]/70 uppercase tracking-wide"
-                >
-                  Card Number
-                </Label>
-                <Input
-                  id="cardNumber"
-                  type="text"
-                  placeholder="1234 5678 9012 3456"
-                  value={formData.cardNumber}
-                  onChange={(e) => {
-                    const f = formatCardNumber(e.target.value);
-                    setFormData({ ...formData, cardNumber: f });
-                    setCardErrors((p) => ({
-                      ...p,
-                      cardNumber: validateCardNumber(f),
-                    }));
-                  }}
-                  className={`mt-1 bg-[#F8FAFC] rounded-lg font-mono h-8 text-sm ${cardErrors.cardNumber ? "input-error" : formData.cardNumber && !cardErrors.cardNumber ? "input-valid" : "border-[#E2E8F0]"}`}
-                  maxLength={19}
-                  required
-                />
-                {cardErrors.cardNumber && (
-                  <p className="text-[10px] text-red-500 mt-0.5">
-                    {cardErrors.cardNumber}
-                  </p>
-                )}
-              </div>
-
-              {/* Expiry + CVV */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label
-                    htmlFor="expiryDate"
-                    className="text-[10px] font-semibold text-[#0A1128]/70 uppercase tracking-wide"
-                  >
-                    Expiry Date
-                  </Label>
-                  <Input
-                    id="expiryDate"
-                    type="text"
-                    placeholder="MM/YY"
-                    value={formData.expiryDate}
-                    onChange={(e) => {
-                      const f = formatExpiry(e.target.value);
-                      setFormData({ ...formData, expiryDate: f });
-                      setCardErrors((p) => ({
-                        ...p,
-                        expiryDate: validateExpiryDate(f),
-                      }));
-                    }}
-                    className={`mt-1 bg-[#F8FAFC] rounded-lg font-mono h-8 text-sm ${cardErrors.expiryDate ? "input-error" : formData.expiryDate && !cardErrors.expiryDate ? "input-valid" : "border-[#E2E8F0]"}`}
-                    maxLength={5}
-                    required
-                  />
-                  {cardErrors.expiryDate && (
-                    <p className="text-[10px] text-red-500 mt-0.5">
-                      {cardErrors.expiryDate}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label
-                    htmlFor="cvv"
-                    className="text-[10px] font-semibold text-[#0A1128]/70 uppercase tracking-wide"
-                  >
-                    CVV
-                  </Label>
-                  <Input
-                    id="cvv"
-                    type="password"
-                    placeholder="•••"
-                    value={formData.cvv}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                      setFormData({ ...formData, cvv: v });
-                      setCardErrors((p) => ({ ...p, cvv: validateCvv(v) }));
-                    }}
-                    className={`mt-1 bg-[#F8FAFC] rounded-lg font-mono h-8 text-sm ${cardErrors.cvv ? "input-error" : formData.cvv && !cardErrors.cvv ? "input-valid" : "border-[#E2E8F0]"}`}
-                    maxLength={4}
-                    required
-                  />
-                  {cardErrors.cvv && (
-                    <p className="text-[10px] text-red-500 mt-0.5">
-                      {cardErrors.cvv}
-                    </p>
-                  )}
-                </div>
-              </div>
-
+            <div className="flex-1 flex flex-col justify-end gap-2.5">
               {/* Security note */}
               <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg p-2 flex items-start gap-1.5">
                 <span className="text-green-500 text-xs"></span>
                 <p className="text-[10px] text-green-800">
-                  Your payment information is encrypted. We never store your
-                  card details.
+                  Your card details are entered directly on PayHere's encrypted
+                  checkout page. We never receive or store them.
                 </p>
               </div>
 
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2">
+                  <p className="text-[11px] text-red-600">{errorMsg}</p>
+                </div>
+              )}
+
               <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 mt-auto
+                type="button"
+                onClick={handlePay}
+                disabled={loading || !sdkReady}
+                className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2
                                     ${
-                                      !loading
+                                      !loading && sdkReady
                                         ? "shimmer-btn text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                                         : "bg-[#0A1128]/20 text-[#0A1128]/40 cursor-not-allowed"
                                     }`}
@@ -458,7 +309,7 @@ export function PaymentPage() {
                   </>
                 )}
               </button>
-            </form>
+            </div>
           </div>
 
           {/* ── Summary Sidebar ── */}
